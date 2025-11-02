@@ -1,0 +1,39 @@
+{
+  "driver_id": "lyngdorf",
+  "version": "0.0.1",
+  "min_core_api": "0.20.0",
+  "name": {
+    "en": "Lyngdorf"
+  },
+  "icon": "custom:lyngdorf.png",
+  "description": {
+    "en": "Control your Lyngdorf with Remote Two/3."
+  },
+  "developer": {
+    "name": "James Soutter",
+    "email": "james.soutter@gmail.com",
+    "url": "https://github.com/jsoutter"
+  },
+  "home_page": "https://github.com/jsoutter/uc-intg-lyngdorf",
+  "setup_data_schema": {
+    "title": {
+      "en": "Integration setup"
+    },
+    "settings": [
+      {
+        "id": "info",
+        "label": {
+          "en": "Setup process"
+        },
+        "field": {
+          "label": {
+            "value": {
+              "en": "The integration will discover your Lyngdorf devices on your network."
+            }
+          }
+        }
+      }
+    ]
+  },
+  "release_date": "2025-11-30"
+}
