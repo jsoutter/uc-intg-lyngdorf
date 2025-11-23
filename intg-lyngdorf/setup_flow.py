@@ -23,7 +23,7 @@ from ucapi import (
 )
 
 import config
-from config import LyngdorfDeviceConfig
+from config import LyngdorfConfigDevice
 
 # from device import LyngdorfDevice
 from const import LYNGDORF_PORT, LYNGDORF_SERVICE_TYPE
@@ -243,7 +243,7 @@ async def _handle_driver_setup(msg: DriverSetupRequest) -> SetupAction:
         dropdown_devices: list[dict[str, Any]] = []
         if (devices := config.devices) is not None:
             for device in devices:
-                dropdown_devices.append({"id": device.id, "label": {"en": f"{device.model}"}})
+                dropdown_devices.append({"id": device.identifier, "label": {"en": f"{device.model}"}})
 
         dropdown_actions: list[dict[str, Any]] = [
             {
@@ -275,6 +275,15 @@ async def _handle_driver_setup(msg: DriverSetupRequest) -> SetupAction:
         else:
             # dummy entry if no devices are available
             dropdown_devices.append({"id": "", "label": {"en": "---"}})
+
+        dropdown_actions.append(
+            {
+                "id": "backup_restore",
+                "label": {
+                    "en": "Backup or restore devices configuration",
+                },
+            },
+        )
 
         return RequestUserInput(
             {"en": "Configuration mode"},
@@ -333,11 +342,6 @@ async def _handle_creation(msg: UserDataResponse) -> SetupAction:
 
         _LOG.info("Entered ip address: %s", host)
 
-        id = f"lyngdorf-{host.replace('.', '-')}"
-        device = LyngdorfDeviceConfig(id, host, port, model="MP-60")
-        if (devices := config.devices) is not None:
-            devices.add(device)
-
         # # try:
         # #     # jvc = JvcProjector(ip, password=password)
         # #     # try:
@@ -360,8 +364,15 @@ async def _handle_creation(msg: UserDataResponse) -> SetupAction:
         # #     _LOG.error("Unable to connect at IP: %s. Exception: %s", ip, ex)
         # #     _LOG.info("Please check if you entered the correct ip of the projector")
         # #     return SetupError(IntegrationSetupError.CONNECTION_REFUSED)
+
+        id = f"lyngdorf-{host.replace('.', '-')}"
+        device = LyngdorfConfigDevice(id, host, port, model="MP-60")
+        if (devices := config.devices) is not None:
+            devices.add(device)
+
     else:
         _LOG.info("No host address entered")
         return SetupError(IntegrationSetupError.OTHER)
+
     _LOG.info("Setup complete")
     return SetupComplete()

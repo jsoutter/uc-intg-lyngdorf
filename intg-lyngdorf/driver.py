@@ -15,8 +15,8 @@ from ucapi.sensor import Attributes as SensorAttr
 
 import config
 from api import api, loop
-from config import LyngdorfDeviceConfig
-from const import EntityPrefix
+from config import LyngdorfConfigDevice
+from const import SensorEntityPrefix
 from device import LyngdorfDevice
 from media_player import LyngdorfMediaPlayer
 from registry import (
@@ -29,6 +29,7 @@ from registry import (
     unregister_device,
 )
 from remote import REMOTE_STATE_MAPPING, LyngdorfRemote
+from sensor import LyngdorfSensor
 
 # from sensor import LyngdorfSensor
 from setup_flow import driver_setup_handler
@@ -96,79 +97,42 @@ async def on_subscribe_entities(entity_ids: list[str]) -> None:
         _LOG.error("First entity %s not found in configured_entities", entity_ids[0])
         return
 
-    device_id = config.extract_device_id(first_entity)
-    device = get_device(device_id)
+    # device_id = config.device_from_entity_id(first_entity)
+    # device = get_device(device_id)
 
     # if not device:
     #     fallback_device = config.devices.get(device_id)
     #     if fallback_device:
-    #         _configure_new_lumagen(fallback_device, connect=True)
+    #         _configure_new_lyngdorf(fallback_device, connect=True)
     #     else:
     #         _LOG.error("Failed to subscribe entities: no Lyngdorf configuration found for %s", device_id)
     #     return
 
-    # for entity_id in entity_ids:
-    #     _LOG.debug("entity id = %s", entity_id)
-    #     entity = api.configured_entities.get(entity_id)
-    #     if not entity:
-    #         continue
+    for entity_id in entity_ids:
+        _LOG.debug("entity id = %s", entity_id)
+        entity = api.configured_entities.get(entity_id)
+        if not entity:
+            continue
 
-    #     # Handle Lyngdorf Sensor entities
-    #     if isinstance(entity, LyngdorfSensor):
-    #         _LOG.info("Setting initial state of Lyngdorf Sensor %s", entity_id)
+        #     # Handle Lyngdorf Sensor entities
+        if isinstance(entity, LyngdorfSensor):
+            _LOG.info("Setting initial state of Lyngdorf Sensor %s", entity_id)
 
-    #         if entity_id.startswith(EntityPrefix.CURRENT_SOURCE_CONTENT_ASPECT.value):
-    #             value = ""
-    #             if device.device_info:
-    #                 value = device.device_info.current_source_content_aspect
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: value, SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.DETECTED_SOURCE_ASPECT.value):
-    #             value = ""
-    #             if device.device_info:
-    #                 value = device.device_info.detected_source_aspect
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: value, SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.INPUT_FORMAT.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "HDR", SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.INPUT_MODE.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "1920x1080i", SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.INPUT_RATE.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "60", SensorAttr.UNIT: "Hz"}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.OUTPUT_FORMAT.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "422-REC709", SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.OUTPUT_MODE.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "3840x2160p", SensorAttr.UNIT: ""}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.OUTPUT_RATE.value):
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: "59.94Hz-2D", SensorAttr.UNIT: "Hz"}
-    #             )
-    #         elif entity_id.startswith(EntityPrefix.PHYSICAL_INPUT_SELECTED.value):
-    #             value = ""
-    #             if device.device_info:
-    #                 value = device.device_info.physical_input_selected
-    #             api.configured_entities.update_attributes(
-    #                 entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: f"Input: {value}", SensorAttr.UNIT: ""}
-    #             )
+            if entity_id.startswith(SensorEntityPrefix.VOLUME.value):
+                pass
+                # value = ""
+                # if device.device_info:
+                #     value = device.device_info.current_source_content_aspect
+                # api.configured_entities.update_attributes(
+                #     entity_id, {SensorAttr.STATE: States.ON, SensorAttr.VALUE: value, SensorAttr.UNIT: ""}
+                # )
 
-    #         current_value = entity.attributes.get(SensorAttr.VALUE, "unknown")
-    #         _LOG.info("Updated Lyngdorf Sensor entity %s with value %s", entity_id, current_value)
-    #         continue
+            current_value = entity.attributes.get(SensorAttr.VALUE, "unknown")
+            _LOG.info("Updated Lyngdorf Sensor entity %s with value %s", entity_id, current_value)
+            continue
 
-    #     # Handle media_player or remote entities
-    #     _update_entity_attributes(entity_id, entity, device.attributes)
+    # Handle media_player or remote entities
+    # _update_entity_attributes(entity_id, entity, device.attributes)
 
 
 def _update_entity_attributes(entity_id: str, entity, attributes: dict):
@@ -189,29 +153,30 @@ async def on_unsubscribe_entities(entity_ids: list[str]) -> None:
     """On unsubscribe, disconnect devices only if no other entities are using them."""
     _LOG.debug("Unsubscribe entities event: %s", entity_ids)
 
-    # # Collect devices associated with the entities being unsubscribed
-    # devices_to_remove = {
-    #     config.extract_device_id(api.configured_entities.get(entity_id))
-    #     for entity_id in entity_ids
-    #     if api.configured_entities.get(entity_id)
-    # }
+    # Collect devices associated with the entities being unsubscribed
+    devices_to_remove = {
+        config.extract_device_id(entity)
+        for entity in (api.configured_entities.get(eid) for eid in entity_ids)
+        if entity is not None
+    }
 
-    # # Check other remaining entities to see if they still use these devices
-    # remaining_entities = [e for e in api.configured_entities.get_all() if e.get("entity_id") not in entity_ids]
+    # Check other remaining entities to see if they still use these devices
+    remaining_entities = [e for e in api.configured_entities.get_all() if e.get("entity_id") not in entity_ids]
+    _LOG.debug(f"remaining_entities={remaining_entities}")
 
     # for entity in remaining_entities:
     #     device_id = config.extract_device_id(entity)
     #     devices_to_remove.discard(device_id)  # discard safely removes if present
 
-    # # Disconnect and clean up devices no longer in use
-    # for device_id in devices_to_remove:
-    #     if device_id in all_devices():
-    #         device = get_device(device_id)
-    #         await device.disconnect()
-    #         device.events.remove_all_listeners()
+    # Disconnect and clean up devices no longer in use
+    for device_id in devices_to_remove:
+        if device_id in all_devices():
+            device = get_device(device_id)
+            # await device.disconnect()
+            # device.events.remove_all_listeners()
 
 
-def _configure_new_lyngdorf(config: LyngdorfDeviceConfig, connect: bool = False) -> None:
+def _configure_new_lyngdorf(config: LyngdorfConfigDevice, connect: bool = False) -> None:
     """
     Create and configure a new Lyngdorf device.
 
@@ -222,16 +187,16 @@ def _configure_new_lyngdorf(config: LyngdorfDeviceConfig, connect: bool = False)
     :param connect: Whether to initiate connection immediately.
     """
 
-    device = get_device(config.id)
+    device = get_device(config.identifier)
 
     # if device:
     #     device.disconnect()
     # else:
     #     device = LyngdorfDevice(info.address, info.port, device_id=info.id)
 
-    #     device.events.on(Events.CONNECTED.name, on_lumagen_connected)
-    #     device.events.on(Events.DISCONNECTED.name, on_lumagen_disconnected)
-    #     device.events.on(Events.UPDATE.name, on_lumagen_update)
+    #     device.events.on(Events.CONNECTED.name, on_lyngdorf_connected)
+    #     device.events.on(Events.DISCONNECTED.name, on_lyngdorf_disconnected)
+    #     device.events.on(Events.UPDATE.name, on_lyngdorf_update)
 
     #     register_device(info.id, device)
     #     _LOG.debug("Registered device: %s", device)
@@ -242,7 +207,7 @@ def _configure_new_lyngdorf(config: LyngdorfDeviceConfig, connect: bool = False)
     _register_available_entities(config, device)
 
 
-def _register_available_entities(config: LyngdorfDeviceConfig, device: LyngdorfDevice) -> None:
+def _register_available_entities(config: LyngdorfConfigDevice, device: LyngdorfDevice) -> None:
     """
     Register remote and media player entities for a Lyngdorf device and associate its device.
 
@@ -255,20 +220,15 @@ def _register_available_entities(config: LyngdorfDeviceConfig, device: LyngdorfD
             api.available_entities.remove(entity.id)
         api.available_entities.add(entity)
 
-    # for sensor in [
-    #     EntityPrefix.INPUT_FORMAT,
-    #     EntityPrefix.INPUT_MODE,
-    #     EntityPrefix.INPUT_RATE,
-    #     EntityPrefix.OUTPUT_FORMAT,
-    #     EntityPrefix.OUTPUT_MODE,
-    #     EntityPrefix.OUTPUT_RATE,
-    # ]:
-    #     entity = LyngdorfSensor(info, sensor.value)
+    for sensor in [
+        SensorEntityPrefix.VOLUME,
+    ]:
+        entity = LyngdorfSensor(config, sensor.value)
 
-    #     if api.available_entities.contains(entity.id):
-    #         api.available_entities.remove(entity.id)
+        if api.available_entities.contains(entity.id):
+            api.available_entities.remove(entity.id)
 
-    #     api.available_entities.add(entity)
+        api.available_entities.add(entity)
 
 
 async def on_lyngdorf_connected(device_id: str):
@@ -327,14 +287,14 @@ async def on_lyngdorf_update(entity_id: str, update: dict[str, Any] | None) -> N
     #     _LOG.debug("attributes not changed")
 
 
-def on_device_added(device: LyngdorfDeviceConfig) -> None:
+def on_device_added(device: LyngdorfConfigDevice) -> None:
     """Handle a newly added device in the configuration."""
     _LOG.debug("New Lyngdorf device added: %s", device)
     loop.create_task(api.set_device_state(ucapi.DeviceStates.CONNECTED))
     _configure_new_lyngdorf(device, connect=False)
 
 
-def on_device_removed(device: LyngdorfDeviceConfig | None) -> None:
+def on_device_removed(device: LyngdorfConfigDevice | None) -> None:
     """Handle removal of a Lyngdorf device from config."""
     if device is None:
         _LOG.info("All devices cleared from config.")

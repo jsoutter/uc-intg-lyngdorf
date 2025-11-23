@@ -7,7 +7,7 @@ Remote entity functions.
 import logging
 from typing import Any
 
-from ucapi import Remote, StatusCodes
+from ucapi import EntityTypes, Remote, StatusCodes
 from ucapi.media_player import Attributes as MediaAttributes
 from ucapi.media_player import States as MediaStates
 from ucapi.remote import Attributes, Commands, States
@@ -22,8 +22,8 @@ from ucapi.ui import (
     create_ui_text,
 )
 
-from config import LyngdorfDeviceConfig
-from const import RemoteDef
+from config import LyngdorfConfigDevice, create_entity_id
+from const import RemoteDef, SimpleCommands
 from const import SimpleCommands as cmds
 from device import LyngdorfDevice
 
@@ -41,15 +41,15 @@ REMOTE_STATE_MAPPING = {
 class LyngdorfRemote(Remote):
     """Representation of a Lyngdorf Remote entity."""
 
-    def __init__(self, config: LyngdorfDeviceConfig, device: LyngdorfDevice):
+    def __init__(self, config_device: LyngdorfConfigDevice, device: LyngdorfDevice):
         """Initialize the class."""
         self._device = device
-        entity_id = f"remote.{config.id}"
+        entity_id = create_entity_id(config_device.identifier, EntityTypes.REMOTE)
         features = RemoteDef.features
         attributes = RemoteDef.attributes
         super().__init__(
             entity_id,
-            f"{config.model} Remote",
+            f"{config_device.model} Remote",
             features,
             attributes,
             simple_commands=RemoteDef.simple_commands,
@@ -66,13 +66,13 @@ class LyngdorfRemote(Remote):
             create_btn_mapping(Buttons.VOLUME_UP, cmds.VOLUME_UP.name),
             create_btn_mapping(Buttons.VOLUME_DOWN, cmds.VOLUME_DOWN.name),
             create_btn_mapping(Buttons.MUTE, cmds.MUTE_TOGGLE.name),
-            create_btn_mapping(Buttons.DPAD_UP, cmds.UP.name),
-            create_btn_mapping(Buttons.DPAD_DOWN, cmds.DOWN.name),
-            create_btn_mapping(Buttons.DPAD_LEFT, cmds.LEFT.name),
-            create_btn_mapping(Buttons.DPAD_RIGHT, cmds.RIGHT.name),
-            create_btn_mapping(Buttons.DPAD_MIDDLE, cmds.OK.name),
+            create_btn_mapping(Buttons.DPAD_UP, cmds.CURSOR_UP.name),
+            create_btn_mapping(Buttons.DPAD_DOWN, cmds.CURSOR_DOWN.name),
+            create_btn_mapping(Buttons.DPAD_LEFT, cmds.CURSOR_LEFT.name),
+            create_btn_mapping(Buttons.DPAD_RIGHT, cmds.CURSOR_RIGHT.name),
+            create_btn_mapping(Buttons.DPAD_MIDDLE, cmds.CURSOR_ENTER.name),
             create_btn_mapping(Buttons.BACK, cmds.BACK.name),
-            DeviceButtonMapping(button="MENU", short_press=EntityCommand(cmd_id="menu")),
+            DeviceButtonMapping(button="MENU", short_press=EntityCommand(cmd_id="MENU")),
         ]
 
         for item in button_mappings:
@@ -84,29 +84,29 @@ class LyngdorfRemote(Remote):
 
         ui_page1 = UiPage("page1", "Power & Input", grid=Size(6, 6))
         ui_page1.add(create_ui_text("Power On", 0, 0, Size(6, 1), Commands.ON))
-        ui_page1.add(create_ui_text("1", 0, 1, Size(2, 1), cmds.NUM_1.name))
-        ui_page1.add(create_ui_text("2", 2, 1, Size(2, 1), cmds.NUM_2.name))
-        ui_page1.add(create_ui_text("3", 4, 1, Size(2, 1), cmds.NUM_3.name))
-        ui_page1.add(create_ui_text("4", 0, 2, Size(2, 1), cmds.NUM_4.name))
-        ui_page1.add(create_ui_text("5", 2, 2, Size(2, 1), cmds.NUM_5.name))
-        ui_page1.add(create_ui_text("6", 4, 2, Size(2, 1), cmds.NUM_6.name))
-        ui_page1.add(create_ui_text("7", 0, 3, Size(2, 1), cmds.NUM_7.name))
-        ui_page1.add(create_ui_text("8", 2, 3, Size(2, 1), cmds.NUM_8.name))
-        ui_page1.add(create_ui_text("9", 4, 3, Size(2, 1), cmds.NUM_9.name))
+        ui_page1.add(create_ui_text("1", 0, 1, Size(2, 1), cmds.DIGIT_1.name))
+        ui_page1.add(create_ui_text("2", 2, 1, Size(2, 1), cmds.DIGIT_2.name))
+        ui_page1.add(create_ui_text("3", 4, 1, Size(2, 1), cmds.DIGIT_3.name))
+        ui_page1.add(create_ui_text("4", 0, 2, Size(2, 1), cmds.DIGIT_4.name))
+        ui_page1.add(create_ui_text("5", 2, 2, Size(2, 1), cmds.DIGIT_5.name))
+        ui_page1.add(create_ui_text("6", 4, 2, Size(2, 1), cmds.DIGIT_6.name))
+        ui_page1.add(create_ui_text("7", 0, 3, Size(2, 1), cmds.DIGIT_7.name))
+        ui_page1.add(create_ui_text("8", 2, 3, Size(2, 1), cmds.DIGIT_8.name))
+        ui_page1.add(create_ui_text("9", 4, 3, Size(2, 1), cmds.DIGIT_9.name))
         ui_page1.add(create_ui_text("SRC -", 0, 4, Size(2, 1), cmds.SRC_DOWN.name))
-        ui_page1.add(create_ui_text("0", 2, 4, Size(2, 1), cmds.NUM_0.name))
+        ui_page1.add(create_ui_text("0", 2, 4, Size(2, 1), cmds.DIGIT_0.name))
         ui_page1.add(create_ui_text("SRC +", 4, 4, Size(2, 1), cmds.SRC_UP.name))
         ui_page1.add(create_ui_text("Standby", 0, 5, Size(6, 1), Commands.OFF))
 
         ui_page2 = UiPage("page2", "Configuration", grid=Size(6, 6))
-        ui_page2.add(create_ui_icon("uc:up-arrow", 2, 1, Size(2, 1), cmds.UP.name))
-        ui_page2.add(create_ui_icon("uc:left-arrow", 0, 2, Size(2, 1), cmds.LEFT.name))
-        ui_page2.add(create_ui_icon("uc:circle", 2, 2, Size(2, 1), cmds.OK.name))
-        ui_page2.add(create_ui_icon("uc:right-arrow", 4, 2, Size(2, 1), cmds.RIGHT.name))
-        ui_page2.add(create_ui_text("Back", 0, 3, Size(2, 1), cmds.BACK.name))
-        ui_page2.add(create_ui_icon("uc:down-arrow", 2, 3, Size(2, 1), cmds.DOWN.name))
-        ui_page2.add(create_ui_text("Menu", 4, 3, Size(2, 1), cmds.MENU.name))
-        ui_page2.add(create_ui_text("Setup", 0, 4, Size(6, 1), cmds.SETUP.name))
+        ui_page2.add(create_ui_text("Setup", 0, 0, Size(6, 1), cmds.SETUP.name))
+        ui_page2.add(create_ui_icon("uc:up-arrow", 2, 1, Size(2, 1), cmds.CURSOR_UP.name))
+        ui_page2.add(create_ui_icon("uc:left-arrow", 0, 2, Size(2, 1), cmds.CURSOR_LEFT.name))
+        ui_page2.add(create_ui_icon("uc:circle", 2, 2, Size(2, 1), cmds.CURSOR_ENTER.name))
+        ui_page2.add(create_ui_icon("uc:right-arrow", 4, 2, Size(2, 1), cmds.CURSOR_RIGHT.name))
+        ui_page2.add(create_ui_icon("uc:down-arrow", 2, 3, Size(2, 1), cmds.CURSOR_DOWN.name))
+        ui_page2.add(create_ui_text("Back", 0, 4, Size(2, 1), cmds.BACK.name))
+        ui_page2.add(create_ui_text("Menu", 4, 4, Size(2, 1), cmds.MENU.name))
 
         return [ui_page1, ui_page2]
 
@@ -128,65 +128,77 @@ class LyngdorfRemote(Remote):
 
         status = StatusCodes.BAD_REQUEST  # Default fallback
 
-        #     try:
-        #         cmd = Commands(cmd_id)
-        #         _LOG.debug("Resolved command: %s", cmd)
-        #     except ValueError:
-        #         status = StatusCodes.NOT_IMPLEMENTED
-        #     else:
-        #         match cmd:
-        #             case Commands.ON:
-        #                 status = await self._device.power_on()
+        try:
+            cmd = Commands(cmd_id)
+            _LOG.debug("Resolved command: %s", cmd)
+        except ValueError:
+            status = StatusCodes.NOT_IMPLEMENTED
+        else:
+            match cmd:
+                # case Commands.ON:
+                #     status = await self._device.power_on()
 
-        #             case Commands.OFF:
-        #                 status = await self._device.power_off()
+                # case Commands.OFF:
+                #     status = await self._device.power_off()
 
-        #             case Commands.SEND_CMD:
-        #                 if not simple_cmd:
-        #                     _LOG.warning("Missing command in SEND_CMD")
-        #                     status = StatusCodes.BAD_REQUEST
-        #                 else:
-        #                     command_enum = None
+                case Commands.SEND_CMD:
+                    if not simple_cmd:
+                        _LOG.warning("Missing command in SEND_CMD")
+                        status = StatusCodes.BAD_REQUEST
+                    else:
+                        command_enum: SimpleCommands | None = None
+                        if simple_cmd in cmds.__members__:
+                            command_enum = cmds[simple_cmd]
+                            _LOG.debug("Resolved command: %s", command_enum)
 
-        #                 # First: try direct enum name match (e.g. "LEFT")
-        #                 if simple_cmd in cmds.__members__:
-        #                     command_enum = cmds[simple_cmd]
+                        status = StatusCodes.OK
 
-        #                 else:
-        #                     # Second: try display_name match (e.g. "1.85", "4x3")
-        #                     for cmd in cmds:
-        #                         if cmd.display_name == simple_cmd:
-        #                             command_enum = cmd
-        #                             break
+                case _:
+                    status = StatusCodes.NOT_IMPLEMENTED
 
-        #                 if command_enum:
-        #                     actual_cmd = command_enum.value
-        #                     cmd_params = None
+            #             case Commands.SEND_CMD:
+            #                 if not simple_cmd:
+            #                     _LOG.warning("Missing command in SEND_CMD")
+            #                     status = StatusCodes.BAD_REQUEST
+            #                 else:
+            #                     command_enum = None
 
-        #                     if actual_cmd.isdigit() and 0 <= int(actual_cmd) <= 10:
-        #                         actual_cmd = f"send_{actual_cmd}"
-        #                     elif actual_cmd == "display_message":
-        #                         cmd_params = {
-        #                             "timeout": 3,
-        #                             "message": "This is a Test Message from the UC Remote.",
-        #                         }
-        #                     elif actual_cmd == "input":
-        #                         try:
-        #                             index = self._device.source_list.index(self._device.source)
-        #                             cmd_params = (index,)
-        #                         except ValueError:
-        #                             _LOG.warning("Current source not in source list")
-        #                             actual_cmd = None
-        #                             status = StatusCodes.BAD_REQUEST
+            #                 # First: try direct enum name match (e.g. "LEFT")
+            #                 if simple_cmd in cmds.__members__:
+            #                     command_enum = cmds[simple_cmd]
 
-        #                     if actual_cmd:
-        #                         status = await self._device.send_command(actual_cmd, cmd_params)
-        #                 else:
-        #                     _LOG.warning("Unknown command: %s", simple_cmd)
-        #                     status = StatusCodes.NOT_IMPLEMENTED
+            #                 else:
+            #                     # Second: try display_name match (e.g. "1.85", "4x3")
+            #                     for cmd in cmds:
+            #                         if cmd.display_name == simple_cmd:
+            #                             command_enum = cmd
+            #                             break
 
-        #             case _:
-        #                 status = StatusCodes.NOT_IMPLEMENTED
+            #                 if command_enum:
+            #                     actual_cmd = command_enum.value
+            #                     cmd_params = None
+
+            #                     if actual_cmd.isdigit() and 0 <= int(actual_cmd) <= 10:
+            #                         actual_cmd = f"send_{actual_cmd}"
+            #                     elif actual_cmd == "display_message":
+            #                         cmd_params = {
+            #                             "timeout": 3,
+            #                             "message": "This is a Test Message from the UC Remote.",
+            #                         }
+            #                     elif actual_cmd == "input":
+            #                         try:
+            #                             index = self._device.source_list.index(self._device.source)
+            #                             cmd_params = (index,)
+            #                         except ValueError:
+            #                             _LOG.warning("Current source not in source list")
+            #                             actual_cmd = None
+            #                             status = StatusCodes.BAD_REQUEST
+
+            #                     if actual_cmd:
+            #                         status = await self._device.send_command(actual_cmd, cmd_params)
+            #                 else:
+            #                     _LOG.warning("Unknown command: %s", simple_cmd)
+            #                     status = StatusCodes.NOT_IMPLEMENTED
 
         return status
 

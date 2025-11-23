@@ -1,6 +1,8 @@
 """Provides connection utilities for communicating with a Lyngdorf device."""
 
+import asyncio
 import logging
+from asyncio import AbstractEventLoop
 
 _LOG = logging.getLogger(__name__)
 
@@ -8,27 +10,28 @@ _LOG = logging.getLogger(__name__)
 class LyngdorfDevice:
     """Handles communication with a Lyngdorf over TCP."""
 
-    # def __init__(
-    #     self,
-    #     host: str,
-    #     port: int,
-    #     device_id: str | None = None,
-    #     discovery: bool = False,
-    #     loop: AbstractEventLoop | None = None,
-    # ):
-    #     # Identity and connection config
-    #     self.device_id = device_id or "unknown"
-    #     self.host = host
-    #     self.port = port
-    #     self.discovery = discovery
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        device_id: str | None = None,
+        discovery: bool = False,
+        loop: AbstractEventLoop | None = None,
+    ):
+        # Identity and connection config
+        self.device_id = device_id or "unknown"
+        self.host = host
+        self.port = port
+        self.discovery = discovery
 
-    #     # Event loop and internal connection state
-    #     self._event_loop = loop or asyncio.get_running_loop()
-    #     self._reconnect_task: asyncio.Task | None = None
-    #     self._connected: bool = False
-    #     self._disconnecting: bool = False
-    #     self._is_alive: bool = False
-    #     self._attr_state = States.OFF
+        #     # Event loop and internal connection state
+        self._event_loop = loop or asyncio.get_running_loop()
+        # self._reconnect_task: Task | None = None
+        self._connected: bool = False
+        self._disconnecting: bool = False
+        self._is_alive: bool = False
+        # self._attr_state = States.OFF
+
     #     self.current_status: PowerStateEnum = PowerStateEnum.UNKNOWN
 
     #     # Device management and communication
@@ -52,8 +55,8 @@ class LyngdorfDevice:
     #     }
     #     self._subscribe_device_state_events()
 
-    # def __repr__(self):
-    #     return f"<LumagenDevice id='{self.device_id}' at {self.host}:{self.port}>"
+    def __repr__(self):
+        return f"<LyngdorfDevice id='{self.device_id}' at {self.host}:{self.port}>"
 
     # def _subscribe_device_state_events(self):
     #     """Subscribe to device state updates from the dispatcher."""
@@ -373,20 +376,3 @@ class LyngdorfDevice:
     #     except Exception as e:
     #         _LOG.error("Failed to select source '%s': %s", source, e)
     #         return StatusCodes.BAD_REQUEST
-
-    # async def get_info(self) -> LumagenInfo | None:
-    #     """Query and return device info dataclass."""
-    #     response = await self.device.get_device_info()
-    #     if not response:
-    #         _LOG.error("No response received from device info query.")
-    #         return None
-
-    #     return LumagenInfo(
-    #         id=f"{response.model_number}{response.serial_number:06d}",
-    #         name=response.model_name,
-    #         address=self.host,
-    #         port=self.port,
-    #         model_name=response.model_name,
-    #         software_version=response.software_revision,
-    #         model_number=response.model_number,
-    #     )

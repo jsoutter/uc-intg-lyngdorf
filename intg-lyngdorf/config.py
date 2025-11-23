@@ -13,35 +13,24 @@ from dataclasses import dataclass
 from json import JSONDecodeError
 from typing import Any
 
-import ucapi
+from ucapi.entity import EntityTypes
 
 _LOG = logging.getLogger(__name__)
 
 
-@dataclass
-class LyngdorfDeviceConfig:
-    """Represents Lyngdorf device configuration including identity, network, and metadata."""
-
-    id: str
-    host: str
-    port: str
-    model: str
-
-    def __repr__(self) -> str:
-        return f"<LyngdorfDeviceConfig id='{self.id}' host='{self.host}' port='{self.port}' model='{self.model}'>"
+def create_entity_id(device_id: str, entity_type: EntityTypes) -> str:
+    """Create a unique entity identifier for the given receiver and entity type."""
+    return f"{entity_type.value}.{device_id}"
 
 
-def extract_device_id(entity: ucapi.Entity) -> str:
+def device_from_entity_id(entity_id: str) -> str | None:
     """
-    Extract the device ID from an entity object.
+    Return the id prefix of an entity_id.
 
-    Args:
-        entity: An entity instance (e.g., Remote, MediaPlayer).
-
-    Returns:
-        The device ID portion from the entity's ID (e.g., "device123" from "remote.device123").
+    :param entity_id: the entity identifier
+    :return: the device prefix, or None if entity_id doesn't contain a dot
     """
-    return entity.id.split(".", 1)[1]
+    return entity_id.split(".", 1)[1]
 
 
 class _EnhancedJSONEncoder(json.JSONEncoder):
@@ -54,43 +43,57 @@ class _EnhancedJSONEncoder(json.JSONEncoder):
         return super().default(o)
 
 
+@dataclass
+class LyngdorfConfigDevice:
+    """Represents Lyngdorf device configuration including identity, network, and metadata."""
+
+    identifier: str
+    host: str
+    port: str
+    model: str
+
+    def __repr__(self) -> str:
+        return (
+            f"<LyngdorfDeviceConfig id='{self.identifier}' host='{self.host}' port='{self.port}' model='{self.model}'>"
+        )
+
+
 class Devices:
     """Integration driver configuration class. Manages all configured Lyngdorf devices."""
 
     def __init__(
         self,
         data_path: str,
-        add_handler: Callable[[LyngdorfDeviceConfig], None],
-        remove_handler: Callable[[LyngdorfDeviceConfig | None], None],
+        add_handler: Callable[[LyngdorfConfigDevice], None],
+        remove_handler: Callable[[LyngdorfConfigDevice | None], None],
         cfg_filename: str = "config.json",
     ) -> None:
         self._data_path: str = data_path
         self._cfg_file_path: str = os.path.join(data_path, cfg_filename)
-        self._config: list[LyngdorfDeviceConfig] = []
+        self._config: list[LyngdorfConfigDevice] = []
         self._add_handler = add_handler
         self._remove_handler = remove_handler
-
         self.load()
 
     def contains(self, device_id: str) -> bool:
         """Check if a device with the given ID exists in the configuration."""
-        return any(d.id == device_id for d in self._config)
+        return any(d.identifier == device_id for d in self._config)
 
-    def add(self, lyngdorf: LyngdorfDeviceConfig) -> None:
+    def add(self, add: LyngdorfConfigDevice) -> None:
         """Add a new configured Lyngdorf device, ignoring duplicates by ID."""
-        if any(d.id == lyngdorf.id for d in self._config):
-            _LOG.warning("Device with id '%s' already exists.", lyngdorf.id)
+        if any(d.identifier == add.identifier for d in self._config):
+            _LOG.warning("Device with id '%s' already exists.", add.identifier)
             return
-        self._config.append(lyngdorf)
+        self._config.append(add)
         if self._add_handler is not None:
-            self._add_handler(lyngdorf)
+            self._add_handler(add)
         self.store()
-        _LOG.info("Device with id '%s' added and stored.", lyngdorf.id)
+        _LOG.info("Device with id '%s' added and stored.", add.identifier)
 
     def remove(self, device_id: str) -> bool:
         """Remove a device from the configuration by its ID."""
         for i, device in enumerate(self._config):
-            if device.id == device_id:
+            if device.identifier == device_id:
                 removed_device = self._config.pop(i)
                 if self._remove_handler is not None:
                     self._remove_handler(removed_device)
@@ -100,22 +103,22 @@ class Devices:
         _LOG.warning("Device with id '%s' not found for removal.", device_id)
         return False
 
-    def get(self, device_id: str) -> LyngdorfDeviceConfig | None:
+    def get(self, device_id: str) -> LyngdorfConfigDevice | None:
         """Retrieve a device by ID, or None if not found."""
         for device in self._config:
-            if device.id == device_id:
+            if device.identifier == device_id:
                 return device
         return None
 
-    def update(self, updated: LyngdorfDeviceConfig) -> bool:
+    def update(self, updated: LyngdorfConfigDevice) -> bool:
         """Update an existing device by matching ID. Returns True if updated."""
         for i, device in enumerate(self._config):
-            if device.id == updated.id:
+            if device.identifier == updated.identifier:
                 self._config[i] = updated
                 self.store()
-                _LOG.info("Device with id '%s' was updated and stored.", updated.id)
+                _LOG.info("Device with id '%s' was updated and stored.", updated.identifier)
                 return True
-        _LOG.warning("Device with id '%s' not found for update.", updated.id)
+        _LOG.warning("Device with id '%s' not found for update.", updated.identifier)
         return False
 
     def clear(self) -> None:
@@ -140,11 +143,11 @@ class Devices:
                 data = json.load(f)
 
             for item in data:
-                if not all(k in item for k in ("id", "host", "port", "model")):
+                if not all(k in item for k in ("identifier", "host", "port", "model")):
                     _LOG.warning("Skipping invalid config item: %s", item)
                     continue
                 try:
-                    lyngdorf = LyngdorfDeviceConfig(**item)
+                    lyngdorf = LyngdorfConfigDevice(**item)
                 except TypeError as e:
                     _LOG.warning("Invalid device format: %s (%s)", item, e)
                     continue
@@ -180,7 +183,7 @@ class Devices:
 
         return False
 
-    def __iter__(self) -> Iterator[LyngdorfDeviceConfig]:
+    def __iter__(self) -> Iterator[LyngdorfConfigDevice]:
         """Allow iteration directly on the Devices instance."""
         return iter(self._config)
 

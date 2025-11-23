@@ -7,40 +7,37 @@ LYNGDORF_PORT = 84
 LYNGDORF_SERVICE_TYPE = "_slactrl._tcp.local."
 
 
-class EntityPrefix(str, Enum):
+class SensorEntityPrefix(str, Enum):
     """Enumeration of supported entities"""
 
-    MEDIA_PLAYER = "media_player"
-    REMOTE = "remote"
-    # VOLUME = "volume"
-    # MUTED = "muted"
+    VOLUME = "volume"
 
 
 class SimpleCommands(str, Enum):
-    """Enumeration of supported remote command names for Lumagen control."""
+    """Enumeration of supported remote command names for Lyngdorf control."""
 
     BACK = "back"
-    DOWN = "down"
-    EXIT = "exit"
-    LEFT = "left"
-    MENU = "menu"
     MUTE_TOGGLE = "mute toggle"
-    NUM_0 = "0"
-    NUM_1 = "1"
-    NUM_2 = "2"
-    NUM_3 = "3"
-    NUM_4 = "4"
-    NUM_5 = "5"
-    NUM_6 = "6"
-    NUM_7 = "7"
-    NUM_8 = "8"
-    NUM_9 = "9"
-    OK = "ok"
-    RIGHT = "right"
+    CURSOR_DOWN = "down"
+    CURSOR_ENTER = "ok"
+    CURSOR_LEFT = "left"
+    CURSOR_RIGHT = "right"
+    CURSOR_UP = "up"
+    DIGIT_0 = "0"
+    DIGIT_1 = "1"
+    DIGIT_2 = "2"
+    DIGIT_3 = "3"
+    DIGIT_4 = "4"
+    DIGIT_5 = "5"
+    DIGIT_6 = "6"
+    DIGIT_7 = "7"
+    DIGIT_8 = "8"
+    DIGIT_9 = "9"
+    EXIT = "exit"
+    MENU = "menu"
     SETUP = "setup"
     SRC_DOWN = "src down"
     SRC_UP = "src up"
-    UP = "up"
     VOLUME_DOWN = "volume down"
     VOLUME_UP = "volume up"
 
@@ -78,9 +75,9 @@ class RemoteDef:
     """
 
     features = [
+        remote.Features.SEND_CMD,
         remote.Features.ON_OFF,
         remote.Features.TOGGLE,
-        remote.Features.SEND_CMD,
     ]
     attributes: dict[str, Any] = {remote.Attributes.STATE: remote.States.UNKNOWN}
     simple_commands = [cmd.name for cmd in SimpleCommands]

@@ -7,11 +7,11 @@ Media-player entity functions.
 import logging
 from typing import Any
 
-from ucapi import MediaPlayer, StatusCodes
+from ucapi import EntityTypes, MediaPlayer, StatusCodes
 from ucapi.media_player import Attributes, Commands, DeviceClasses, States
 
-from config import LyngdorfDeviceConfig
-from const import EntityPrefix, MediaPlayerDef, SimpleCommands
+from config import LyngdorfConfigDevice, create_entity_id
+from const import MediaPlayerDef, SimpleCommands
 from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
@@ -20,10 +20,10 @@ _LOG = logging.getLogger(__name__)
 class LyngdorfMediaPlayer(MediaPlayer):
     """Representation of a Lyngdorf Media Player entity."""
 
-    def __init__(self, config: LyngdorfDeviceConfig, device: LyngdorfDevice):
+    def __init__(self, config_device: LyngdorfConfigDevice, device: LyngdorfDevice):
         """Initialize the class."""
         self._device = device
-        entity_id = f"{EntityPrefix.MEDIA_PLAYER.value}.{config.id}"
+        entity_id = create_entity_id(config_device.identifier, EntityTypes.MEDIA_PLAYER)
         features = MediaPlayerDef.features
         attributes = MediaPlayerDef.attributes
         self.simple_commands = [*SimpleCommands]
@@ -31,7 +31,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
         # options = {Options.SIMPLE_COMMANDS: self.simple_commands}
         super().__init__(
             entity_id,
-            f"{config.model} Media Player",
+            f"{config_device.model} Media Player",
             features,
             attributes,
             device_class=DeviceClasses.RECEIVER,
@@ -64,12 +64,12 @@ class LyngdorfMediaPlayer(MediaPlayer):
             case Commands.OFF:
                 # res = await self._device.power_off()
                 res = StatusCodes.OK
-            case Commands.PLAY_PAUSE:
-                res = StatusCodes.OK
-            case Commands.NEXT:
-                res = StatusCodes.OK
-            case Commands.PREVIOUS:
-                res = StatusCodes.OK
+            # case Commands.PLAY_PAUSE:
+            #     res = StatusCodes.OK
+            # case Commands.NEXT:
+            #     res = StatusCodes.OK
+            # case Commands.PREVIOUS:
+            #     res = StatusCodes.OK
             case Commands.MUTE_TOGGLE:
                 # await self._device.executor.mute(2)
                 res = StatusCodes.OK
@@ -143,6 +143,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
         """
         attributes: dict[Attributes, Any] = {}
         # update[Attributes.SOUND_MODE_LIST] = list(self._device.sound_modes.values())
+        # update[Attributes.SOUND_MODE_LIST] = list(self._device.sound_modes.values())
 
         for key in (
             Attributes.MUTED,
@@ -159,6 +160,8 @@ class LyngdorfMediaPlayer(MediaPlayer):
 
         if Attributes.STATE in attributes:
             if attributes[Attributes.STATE] == States.OFF:
+                attributes[Attributes.SOUND_MODE] = ""
+                attributes[Attributes.SOUND_MODE_LIST] = []
                 attributes[Attributes.SOURCE] = ""
                 attributes[Attributes.SOURCE_LIST] = []
 
