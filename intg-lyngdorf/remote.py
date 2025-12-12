@@ -7,6 +7,7 @@ Remote entity functions.
 import logging
 from typing import Any
 
+from pylyngdorf.lyngdorf import Lyngdorf
 from ucapi import EntityTypes, Remote, StatusCodes
 from ucapi.media_player import Attributes as MediaAttributes
 from ucapi.media_player import States as MediaStates
@@ -22,10 +23,9 @@ from ucapi.ui import (
     create_ui_text,
 )
 
-from config import LyngdorfConfigDevice, create_entity_id
+from config import LyngdorfDeviceConfig, create_entity_id
 from const import RemoteDef, SimpleCommands
 from const import SimpleCommands as cmds
-from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ REMOTE_STATE_MAPPING = {
 class LyngdorfRemote(Remote):
     """Representation of a Lyngdorf Remote entity."""
 
-    def __init__(self, config_device: LyngdorfConfigDevice, device: LyngdorfDevice):
+    def __init__(self, config_device: LyngdorfDeviceConfig, device: Lyngdorf):
         """Initialize the class."""
         self._device = device
         entity_id = create_entity_id(config_device.identifier, EntityTypes.REMOTE)
@@ -66,11 +66,11 @@ class LyngdorfRemote(Remote):
             create_btn_mapping(Buttons.VOLUME_UP, cmds.VOLUME_UP.name),
             create_btn_mapping(Buttons.VOLUME_DOWN, cmds.VOLUME_DOWN.name),
             create_btn_mapping(Buttons.MUTE, cmds.MUTE_TOGGLE.name),
-            create_btn_mapping(Buttons.DPAD_UP, cmds.CURSOR_UP.name),
-            create_btn_mapping(Buttons.DPAD_DOWN, cmds.CURSOR_DOWN.name),
-            create_btn_mapping(Buttons.DPAD_LEFT, cmds.CURSOR_LEFT.name),
-            create_btn_mapping(Buttons.DPAD_RIGHT, cmds.CURSOR_RIGHT.name),
-            create_btn_mapping(Buttons.DPAD_MIDDLE, cmds.CURSOR_ENTER.name),
+            create_btn_mapping(Buttons.DPAD_UP, cmds.UP.name),
+            create_btn_mapping(Buttons.DPAD_DOWN, cmds.DOWN.name),
+            create_btn_mapping(Buttons.DPAD_LEFT, cmds.LEFT.name),
+            create_btn_mapping(Buttons.DPAD_RIGHT, cmds.RIGHT.name),
+            create_btn_mapping(Buttons.DPAD_MIDDLE, cmds.ENTER.name),
             create_btn_mapping(Buttons.BACK, cmds.BACK.name),
             DeviceButtonMapping(button="MENU", short_press=EntityCommand(cmd_id="MENU")),
         ]
@@ -100,11 +100,11 @@ class LyngdorfRemote(Remote):
 
         ui_page2 = UiPage("page2", "Configuration", grid=Size(6, 6))
         ui_page2.add(create_ui_text("Setup", 0, 0, Size(6, 1), cmds.SETUP.name))
-        ui_page2.add(create_ui_icon("uc:up-arrow", 2, 1, Size(2, 1), cmds.CURSOR_UP.name))
-        ui_page2.add(create_ui_icon("uc:left-arrow", 0, 2, Size(2, 1), cmds.CURSOR_LEFT.name))
-        ui_page2.add(create_ui_icon("uc:circle", 2, 2, Size(2, 1), cmds.CURSOR_ENTER.name))
-        ui_page2.add(create_ui_icon("uc:right-arrow", 4, 2, Size(2, 1), cmds.CURSOR_RIGHT.name))
-        ui_page2.add(create_ui_icon("uc:down-arrow", 2, 3, Size(2, 1), cmds.CURSOR_DOWN.name))
+        ui_page2.add(create_ui_icon("uc:up-arrow", 2, 1, Size(2, 1), cmds.UP.name))
+        ui_page2.add(create_ui_icon("uc:left-arrow", 0, 2, Size(2, 1), cmds.LEFT.name))
+        ui_page2.add(create_ui_icon("uc:circle", 2, 2, Size(2, 1), cmds.ENTER.name))
+        ui_page2.add(create_ui_icon("uc:right-arrow", 4, 2, Size(2, 1), cmds.RIGHT.name))
+        ui_page2.add(create_ui_icon("uc:down-arrow", 2, 3, Size(2, 1), cmds.DOWN.name))
         ui_page2.add(create_ui_text("Back", 0, 4, Size(2, 1), cmds.BACK.name))
         ui_page2.add(create_ui_text("Menu", 4, 4, Size(2, 1), cmds.MENU.name))
 

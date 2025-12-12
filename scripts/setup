@@ -21,6 +21,7 @@ PIP="$PYTHON_VENV -m pip"
 # Upgrade pip and install dependencies
 ${PIP} install --upgrade pip
 ${PIP} install --requirement requirements.txt
+${PIP} install ./pylyngdorflib
 
 # Configure git hooks
 git config --local core.hooksPath git-hooks

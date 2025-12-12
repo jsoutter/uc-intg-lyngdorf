@@ -12,10 +12,11 @@ Attributes:
 import asyncio
 import sys
 
-import ucapi  # type: ignore
+import ucapi
+from ucapi.api import IntegrationAPI
 
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 loop = asyncio.new_event_loop()
-api = ucapi.IntegrationAPI(loop)
+api: IntegrationAPI = ucapi.IntegrationAPI(loop)

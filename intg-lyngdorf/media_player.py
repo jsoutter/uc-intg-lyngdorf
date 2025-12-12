@@ -7,12 +7,12 @@ Media-player entity functions.
 import logging
 from typing import Any
 
+from pylyngdorf.lyngdorf import Lyngdorf
 from ucapi import EntityTypes, MediaPlayer, StatusCodes
 from ucapi.media_player import Attributes, Commands, DeviceClasses, States
 
-from config import LyngdorfConfigDevice, create_entity_id
+from config import LyngdorfDeviceConfig, create_entity_id
 from const import MediaPlayerDef, SimpleCommands
-from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ _LOG = logging.getLogger(__name__)
 class LyngdorfMediaPlayer(MediaPlayer):
     """Representation of a Lyngdorf Media Player entity."""
 
-    def __init__(self, config_device: LyngdorfConfigDevice, device: LyngdorfDevice):
+    def __init__(self, config_device: LyngdorfDeviceConfig, device: Lyngdorf):
         """Initialize the class."""
         self._device = device
         entity_id = create_entity_id(config_device.identifier, EntityTypes.MEDIA_PLAYER)
@@ -28,7 +28,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
         attributes = MediaPlayerDef.attributes
         self.simple_commands = [*SimpleCommands]
 
-        # options = {Options.SIMPLE_COMMANDS: self.simple_commands}
+        # options: dict[str, Any] = {Options.SIMPLE_COMMANDS: self.simple_commands}
         super().__init__(
             entity_id,
             f"{config_device.model} Media Player",
@@ -143,7 +143,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
         """
         attributes: dict[Attributes, Any] = {}
         # update[Attributes.SOUND_MODE_LIST] = list(self._device.sound_modes.values())
-        # update[Attributes.SOUND_MODE_LIST] = list(self._device.sound_modes.values())
+        # update[Attributes.SOURCE_LIST] = list(self._device.sound_modes.values())
 
         for key in (
             Attributes.MUTED,

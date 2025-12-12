@@ -27,3 +27,4 @@ def setup_logger():
     logging.getLogger("device").setLevel(level)
     logging.getLogger("remote").setLevel(level)
     logging.getLogger("media_player").setLevel(level)
+    logging.getLogger("pylyngdorf").setLevel(level)

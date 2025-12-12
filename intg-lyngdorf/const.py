@@ -1,16 +1,39 @@
+"""Lyngdorf device integration constants."""
+
 from enum import Enum
 from typing import Any
 
 from ucapi import media_player, remote
 
-LYNGDORF_PORT = 84
 LYNGDORF_SERVICE_TYPE = "_slactrl._tcp.local."
 
 
-class SensorEntityPrefix(str, Enum):
+class EntityPrefix(str, Enum):
     """Enumeration of supported entities"""
 
+    MEDIA_PLAYER = "media_player"
+    REMOTE = "remote"
+
+
+class SensorEntityPrefix(str, Enum):
+    """Enumeration of supported sensor entities"""
+
     VOLUME = "volume"
+    STREAM_TYPE = "stream_type"
+    VOICING = "voicing"
+    FOCUS_POSITION = "focus_position"
+    AUDIO_INPUT = "audio_input"
+    AUDIO_TYPE = "audio_type"
+    VIDEO_INPUT = "video_input"
+    VIDEO_TYPE = "video_type"
+    VIDEO_OUTPUT = "video_output"
+    LIPSYNC = "lipsync"
+    BASS_TRIM = "bass_trim"
+    TREBLE_TRIM = "treble_trim"
+    CENTER_TRIM = "center_trim"
+    HEIGHTS_TRIM = "heights_trim"
+    LFE_TRIM = "lfe_trim"
+    SURROUNDS_TRIM = "surrounds_trim"
 
 
 class SimpleCommands(str, Enum):
@@ -18,11 +41,11 @@ class SimpleCommands(str, Enum):
 
     BACK = "back"
     MUTE_TOGGLE = "mute toggle"
-    CURSOR_DOWN = "down"
-    CURSOR_ENTER = "ok"
-    CURSOR_LEFT = "left"
-    CURSOR_RIGHT = "right"
-    CURSOR_UP = "up"
+    UP = "up"
+    DOWN = "down"
+    ENTER = "ok"
+    LEFT = "left"
+    RIGHT = "right"
     DIGIT_0 = "0"
     DIGIT_1 = "1"
     DIGIT_2 = "2"
@@ -49,22 +72,34 @@ class MediaPlayerDef:
     """
 
     features = [
-        media_player.Features.MUTE,
-        media_player.Features.MUTE_TOGGLE,
-        media_player.Features.SELECT_SOUND_MODE,
-        media_player.Features.SELECT_SOURCE,
-        media_player.Features.UNMUTE,
+        media_player.Features.ON_OFF,
         media_player.Features.VOLUME,
         media_player.Features.VOLUME_UP_DOWN,
+        media_player.Features.MUTE_TOGGLE,
+        media_player.Features.MUTE,
+        media_player.Features.UNMUTE,
+        media_player.Features.PLAY_PAUSE,
+        media_player.Features.NEXT,
+        media_player.Features.PREVIOUS,
+        media_player.Features.SELECT_SOURCE,
+        # MP devices only
+        media_player.Features.SELECT_SOUND_MODE,
+        media_player.Features.DPAD,
+        media_player.Features.NUMPAD,
+        media_player.Features.HOME,
+        media_player.Features.MENU,
+        media_player.Features.INFO,
+        media_player.Features.SETTINGS,
     ]
     attributes: dict[str, Any] = {
         media_player.Attributes.MUTED: False,
-        media_player.Attributes.SOUND_MODE: "",
-        media_player.Attributes.SOUND_MODE_LIST: [],
         media_player.Attributes.SOURCE: "",
         media_player.Attributes.SOURCE_LIST: [],
         media_player.Attributes.STATE: media_player.States.OFF,
         media_player.Attributes.VOLUME: None,
+        # MP devices only
+        media_player.Attributes.SOUND_MODE: "",
+        media_player.Attributes.SOUND_MODE_LIST: [],
     }
 
 
@@ -77,7 +112,6 @@ class RemoteDef:
     features = [
         remote.Features.SEND_CMD,
         remote.Features.ON_OFF,
-        remote.Features.TOGGLE,
     ]
     attributes: dict[str, Any] = {remote.Attributes.STATE: remote.States.UNKNOWN}
     simple_commands = [cmd.name for cmd in SimpleCommands]

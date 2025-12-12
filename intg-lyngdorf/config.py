@@ -44,18 +44,17 @@ class _EnhancedJSONEncoder(json.JSONEncoder):
 
 
 @dataclass
-class LyngdorfConfigDevice:
+class LyngdorfDeviceConfig:
     """Represents Lyngdorf device configuration including identity, network, and metadata."""
 
     identifier: str
     host: str
-    port: str
+    port: int
     model: str
+    # multichannel: bool
 
     def __repr__(self) -> str:
-        return (
-            f"<LyngdorfDeviceConfig id='{self.identifier}' host='{self.host}' port='{self.port}' model='{self.model}'>"
-        )
+        return f"<LyngdorfDevice id='{self.identifier}' host='{self.host}' port='{self.port}' model='{self.model}'>"
 
 
 class Devices:
@@ -64,13 +63,13 @@ class Devices:
     def __init__(
         self,
         data_path: str,
-        add_handler: Callable[[LyngdorfConfigDevice], None],
-        remove_handler: Callable[[LyngdorfConfigDevice | None], None],
+        add_handler: Callable[[LyngdorfDeviceConfig], None],
+        remove_handler: Callable[[LyngdorfDeviceConfig | None], None],
         cfg_filename: str = "config.json",
     ) -> None:
         self._data_path: str = data_path
         self._cfg_file_path: str = os.path.join(data_path, cfg_filename)
-        self._config: list[LyngdorfConfigDevice] = []
+        self._config: list[LyngdorfDeviceConfig] = []
         self._add_handler = add_handler
         self._remove_handler = remove_handler
         self.load()
@@ -79,7 +78,7 @@ class Devices:
         """Check if a device with the given ID exists in the configuration."""
         return any(d.identifier == device_id for d in self._config)
 
-    def add(self, add: LyngdorfConfigDevice) -> None:
+    def add(self, add: LyngdorfDeviceConfig) -> None:
         """Add a new configured Lyngdorf device, ignoring duplicates by ID."""
         if any(d.identifier == add.identifier for d in self._config):
             _LOG.warning("Device with id '%s' already exists.", add.identifier)
@@ -103,14 +102,14 @@ class Devices:
         _LOG.warning("Device with id '%s' not found for removal.", device_id)
         return False
 
-    def get(self, device_id: str) -> LyngdorfConfigDevice | None:
+    def get(self, device_id: str) -> LyngdorfDeviceConfig | None:
         """Retrieve a device by ID, or None if not found."""
         for device in self._config:
             if device.identifier == device_id:
                 return device
         return None
 
-    def update(self, updated: LyngdorfConfigDevice) -> bool:
+    def update(self, updated: LyngdorfDeviceConfig) -> bool:
         """Update an existing device by matching ID. Returns True if updated."""
         for i, device in enumerate(self._config):
             if device.identifier == updated.identifier:
@@ -143,11 +142,12 @@ class Devices:
                 data = json.load(f)
 
             for item in data:
+                # TODO Add multichannel
                 if not all(k in item for k in ("identifier", "host", "port", "model")):
                     _LOG.warning("Skipping invalid config item: %s", item)
                     continue
                 try:
-                    lyngdorf = LyngdorfConfigDevice(**item)
+                    lyngdorf = LyngdorfDeviceConfig(**item)
                 except TypeError as e:
                     _LOG.warning("Invalid device format: %s (%s)", item, e)
                     continue
@@ -183,7 +183,7 @@ class Devices:
 
         return False
 
-    def __iter__(self) -> Iterator[LyngdorfConfigDevice]:
+    def __iter__(self) -> Iterator[LyngdorfDeviceConfig]:
         """Allow iteration directly on the Devices instance."""
         return iter(self._config)
 

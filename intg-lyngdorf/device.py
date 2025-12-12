@@ -2,9 +2,38 @@
 
 import asyncio
 import logging
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Task
+from enum import IntEnum
+from typing import Any
+
+from pyee.asyncio import AsyncIOEventEmitter
+from pylyngdorf.const import DeviceModel, LyngdorfQueries
+from pylyngdorf.lyngdorf import Lyngdorf
+from ucapi.media_player import Attributes as MediaAttr
+from ucapi.sensor import Attributes as SensorAttr
+
+from const import EntityPrefix, SensorEntityPrefix
 
 _LOG = logging.getLogger(__name__)
+
+
+class Events(IntEnum):
+    """Internal driver events."""
+
+    CONNECTING = 0
+    CONNECTED = 1
+    DISCONNECTED = 2
+    ERROR = 3
+    UPDATE = 4
+
+
+class States(IntEnum):
+    """State of a connected device."""
+
+    UNKNOWN = 0
+    UNAVAILABLE = 1
+    OFF = 2
+    ON = 3
 
 
 class LyngdorfDevice:
@@ -14,365 +43,110 @@ class LyngdorfDevice:
         self,
         host: str,
         port: int,
+        model: DeviceModel,
         device_id: str | None = None,
-        discovery: bool = False,
         loop: AbstractEventLoop | None = None,
     ):
         # Identity and connection config
         self.device_id = device_id or "unknown"
         self.host = host
         self.port = port
-        self.discovery = discovery
+        self.model = model
+        self._device: Lyngdorf
 
-        #     # Event loop and internal connection state
+        # Event loop and internal connection state
         self._event_loop = loop or asyncio.get_running_loop()
-        # self._reconnect_task: Task | None = None
+        self.events = AsyncIOEventEmitter(self._event_loop)
+
+        self._reconnect_task: Task | None = None
         self._connected: bool = False
         self._disconnecting: bool = False
         self._is_alive: bool = False
-        # self._attr_state = States.OFF
+        self._attr_state = States.OFF
 
-    #     self.current_status: PowerStateEnum = PowerStateEnum.UNKNOWN
-
-    #     # Device management and communication
-    #     self.device = DeviceManager(connection_type="ip", reconnect=False)
-    #     self._source_list = self.device.source_list
-    #     self._active_source = None
-    #     self.dispatcher = self.device.dispatcher
-    #     self.events = AsyncIOEventEmitter(self._event_loop)
-
-    #     # Internal event subscriptions
-    #     self._attr_handlers = {
-    #         "device_status": self._handle_device_status,
-    #         "is_alive": self._handle_is_alive,
-    #         "input_labels": self._handle_input_labels,
-    #         "physical_input_selected": self._handle_physical_input_selected,
-    #         "current_source_content_aspect": self._handle_current_source_content_aspect,
-    #         "detected_source_aspect": self._handle_detected_source_aspect,
-    #         "source_mode": self._handle_source_mode,
-    #         "source_vertical_rate": self._handle_source_vertical_rate,
-    #         "source_dynamic_range": self._handle_source_dynamic_range,
-    #     }
-    #     self._subscribe_device_state_events()
+        # Add properties for lists
+        # sources, sounds modes, voicings, focus positions
 
     def __repr__(self):
         return f"<LyngdorfDevice id='{self.device_id}' at {self.host}:{self.port}>"
 
-    # def _subscribe_device_state_events(self):
-    #     """Subscribe to device state updates from the dispatcher."""
-    #     for attr_name in self._attr_handlers:
-    #         self.dispatcher.register_listener(
-    #             attr_name, self._create_event_callback(attr_name)
-    #         )
+    def _callback(self, event: LyngdorfQueries):
+        """"""
+        match event:
+            case LyngdorfQueries.POWER:
+                # Derive value
+                self._attr_state = States.ON
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.STATE, self._attr_state)
+                self._emit_update(EntityPrefix.REMOTE, MediaAttr.STATE, self._attr_state)
 
-    #     self.dispatcher.register_listener(
-    #         EventType.CONNECTION_STATE, self._handle_connection_state
-    #     )
+            case LyngdorfQueries.VOLUME:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.VOLUME, self._device.volume_percent)
+                self._emit_update(SensorEntityPrefix.VOLUME, SensorAttr.VALUE, self._device.volume)
 
-    # def _create_event_callback(self, attr_name: str):
-    #     """Create an async callback for attribute change events."""
+            case LyngdorfQueries.MUTE:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.MUTED, self._device.muted)
 
-    #     async def callback(event_data: dict):
-    #         await self._on_device_state_event(attr_name, event_data)
+            case LyngdorfQueries.SOURCE_LIST:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE_LIST, self._device.sources)
 
-    #     return lambda _, ed: asyncio.create_task(callback(ed))
+            case LyngdorfQueries.SOURCE:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOURCE, self._device.source)
 
-    # async def _on_device_state_event(self, attr_name: str, event_data: dict) -> None:
-    #     """Dispatch state event to the appropriate handler."""
-    #     value = event_data.get("value")
-    #     _LOG.debug("State changed: %s -> %s", attr_name, value)
+            case LyngdorfQueries.STREAM_TYPE:
+                self._emit_update(SensorEntityPrefix.STREAM_TYPE, SensorAttr.VALUE, self._device.stream_type)
 
-    #     handler = self._attr_handlers.get(attr_name)
-    #     if handler:
-    #         await handler(value)
-    #     else:
-    #         _LOG.debug("No handler registered for attribute: %s", attr_name)
+            case LyngdorfQueries.VOICING:
+                self._emit_update(SensorEntityPrefix.VOICING, SensorAttr.VALUE, self._device.voicing)
 
-    # async def _handle_device_status(self, value: Any) -> None:
-    #     """Handle updates to device power status."""
-    #     try:
-    #         self.current_status = PowerStateEnum(value)
-    #         if self.current_status == PowerStateEnum.ACTIVE:
-    #             self._attr_state = States.ON
-    #         elif self.current_status == PowerStateEnum.STANDBY:
-    #             self._attr_state = States.STANDBY
-    #         else:
-    #             self._attr_state = States.UNKNOWN
-    #         await self._emit_update(
-    #             EntityPrefix.MEDIA_PLAYER.value, MediaAttr.STATE, self._attr_state
-    #         )
-    #         await self._emit_update(
-    #             EntityPrefix.REMOTE.value, MediaAttr.STATE, self._attr_state
-    #         )
-    #     except ValueError:
-    #         _LOG.warning("Unknown power state received: %s", value)
-    #         self.current_status = PowerStateEnum.UNKNOWN
-    #         self._attr_state = States.UNKNOWN
+            case LyngdorfQueries.FOCUS_POSITION:
+                self._emit_update(SensorEntityPrefix.FOCUS_POSITION, SensorAttr.VALUE, self._device.focus_position)
 
-    # async def _handle_is_alive(self, _: Any) -> None:
-    #     """Mark device as alive."""
-    #     self._is_alive = True
+            case LyngdorfQueries.AUDIO_MODE_LIST:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE_LIST, self._device.audio_modes)
 
-    # async def _handle_input_labels(self, value: Any) -> None:
-    #     """Handle input label updates from the device."""
-    #     await self._emit_update(
-    #         EntityPrefix.MEDIA_PLAYER.value, MediaAttr.SOURCE_LIST, value
-    #     )
-    #     self._source_list = self.device.source_list
-    #     _LOG.debug(self.source_list)
+            case LyngdorfQueries.AUDIO_MODE:
+                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE, self._device.audio_mode)
 
-    # async def _handle_physical_input_selected(self, value: Any) -> None:
-    #     """Handle selection of a physical input."""
-    #     try:
-    #         index = int(value) - 1
-    #         source_name = (
-    #             self._source_list[index]
-    #             if 0 <= index < len(self._source_list)
-    #             else None
-    #         )
-    #         if source_name:
-    #             self._active_source = source_name
-    #             await self._emit_update(
-    #                 EntityPrefix.MEDIA_PLAYER.value, MediaAttr.SOURCE, source_name
-    #             )
-    #         else:
-    #             _LOG.warning("Invalid physical_input_selected index: %s", value)
-    #         await self._emit_update(
-    #             EntityPrefix.PHYSICAL_INPUT_SELECTED.value,
-    #             SensorAttr.VALUE,
-    #             f"Input: {value}",
-    #         )
-    #     except (ValueError, TypeError):
-    #         _LOG.warning("Unable to process physical_input_selected value: %s", value)
+            case LyngdorfQueries.AUDIO_INPUT:
+                self._emit_update(SensorEntityPrefix.AUDIO_INPUT, SensorAttr.VALUE, self._device.audio_input)
 
-    # async def _handle_connection_state(self, _, event_data: dict) -> None:
-    #     """Process connection state changes."""
-    #     state = event_data.get("state")
+            case LyngdorfQueries.AUDIO_TYPE:
+                self._emit_update(SensorEntityPrefix.AUDIO_TYPE, SensorAttr.VALUE, self._device.audio_type)
 
-    #     if state == ConnectionStatus.DISCONNECTED:
-    #         _LOG.debug("Connection state: DISCONNECTED")
-    #         self._connected = False
-    #         self._is_alive = False
-    #         self._attr_state = States.UNAVAILABLE
-    #         self.events.emit(Events.DISCONNECTED.name, self.device_id)
+            case LyngdorfQueries.VIDEO_INPUT:
+                self._emit_update(SensorEntityPrefix.VIDEO_INPUT, SensorAttr.VALUE, self._device.video_input)
 
-    #         # Prevent reconnect if we explicitly called disconnect
-    #         if not self._disconnecting:
-    #             if self._reconnect_task is None or self._reconnect_task.done():
-    #                 self._reconnect_task = asyncio.create_task(self._reconnect_loop())
+            case LyngdorfQueries.VIDEO_TYPE:
+                self._emit_update(SensorEntityPrefix.VIDEO_TYPE, SensorAttr.VALUE, self._device.video_type)
 
-    #     elif state == ConnectionStatus.CONNECTED:
-    #         label = "IP2SL device" if self.discovery else "Lumagen"
-    #         _LOG.info("Connected to %s at %s:%d", label, self.host, self.port)
-    #         self._connected = True
-    #         self.events.emit(Events.CONNECTED.name, self.device_id)
+            case LyngdorfQueries.VIDEO_OUTPUT:
+                self._emit_update(SensorEntityPrefix.VIDEO_OUTPUT, SensorAttr.VALUE, self._device.video_output)
 
-    #         await asyncio.sleep(1)
-    #         _LOG.debug("Fetching labels after connection...")
-    #         await self.device.executor.get_labels(get_all=False)
+            case LyngdorfQueries.LIPSYNC:
+                self._emit_update(SensorEntityPrefix.LIPSYNC, SensorAttr.VALUE, self._device.lipsync)
 
-    # async def _handle_current_source_content_aspect(self, value: Any) -> None:
-    #     _LOG.debug("Handle current_source_content_aspect.....................")
-    #     _LOG.debug("Event received: %s", value)
-    #     await self._emit_update(
-    #         EntityPrefix.CURRENT_SOURCE_CONTENT_ASPECT.value,
-    #         SensorAttr.VALUE,
-    #         str(value),
-    #     )
+            case LyngdorfQueries.TRIM_BASS:
+                self._emit_update(SensorEntityPrefix.BASS_TRIM, SensorAttr.VALUE, self._device.bass_trim)
 
-    # async def _handle_detected_source_aspect(self, value: Any) -> None:
-    #     _LOG.debug("Handle detected_source_aspect.....................")
-    #     _LOG.debug("Event received: %s", value)
-    #     await self._emit_update(
-    #         EntityPrefix.DETECTED_SOURCE_ASPECT.value, SensorAttr.VALUE, str(value)
-    #     )
+            case LyngdorfQueries.TRIM_TREBLE:
+                self._emit_update(SensorEntityPrefix.TREBLE_TRIM, SensorAttr.VALUE, self._device.treble_trim)
 
-    # async def _handle_source_mode(self, value: Any) -> None:
-    #     _LOG.debug("Handle source_mode.....................")
-    #     _LOG.debug("Event received: %s", value)
-    #     await self._emit_update(
-    #         EntityPrefix.INPUT_MODE.value, SensorAttr.VALUE, str(value)
-    #     )
+            case LyngdorfQueries.TRIM_CENTER:
+                self._emit_update(SensorEntityPrefix.CENTER_TRIM, SensorAttr.VALUE, self._device.center_trim)
 
-    # async def _handle_source_vertical_rate(self, value: Any) -> None:
-    #     _LOG.debug("Handle source_vertical_rate.....................")
-    #     _LOG.debug("Event received: %s", value)
-    #     await self._emit_update(
-    #         EntityPrefix.INPUT_RATE.value, SensorAttr.VALUE, str(value)
-    #     )
+            case LyngdorfQueries.TRIM_HEIGHTS:
+                self._emit_update(SensorEntityPrefix.HEIGHTS_TRIM, SensorAttr.VALUE, self._device.heights_trim)
 
-    # async def _handle_source_dynamic_range(self, value: Any) -> None:
-    #     _LOG.debug("Handle source_dynamic_range.....................")
-    #     _LOG.debug("Event received: %s", value)
-    #     await self._emit_update(
-    #         EntityPrefix.INPUT_FORMAT.value, SensorAttr.VALUE, str(value)
-    #     )
+            case LyngdorfQueries.TRIM_LFE:
+                self._emit_update(SensorEntityPrefix.LFE_TRIM, SensorAttr.VALUE, self._device.lfe_trim)
 
-    # async def _emit_update(self, prefix: str, attr: str, value: Any) -> None:
-    #     entity_id = f"{prefix}.{self.device_id}"
-    #     self.events.emit(Events.UPDATE.name, entity_id, {attr: value})
+            case LyngdorfQueries.TRIM_SURROUNDS:
+                self._emit_update(SensorEntityPrefix.SURROUNDS_TRIM, SensorAttr.VALUE, self._device.surrounds_trim)
 
-    # @property
-    # def device_info(self) -> DeviceInfo:
-    #     """Get the DeviceInfo class."""
-    #     return self.device.device_info
+            case _:
+                pass
 
-    # @property
-    # def is_on(self) -> bool:
-    #     """Return whether device is powered on."""
-    #     return self.current_status == PowerStateEnum.ACTIVE
-
-    # @property
-    # def is_alive(self) -> bool:
-    #     """Return whether device is alive."""
-    #     return self._is_alive
-
-    # @property
-    # def source_list(self) -> list[str]:
-    #     """Return list of input sources."""
-    #     return self._source_list
-
-    # @property
-    # def source(self) -> str:
-    #     """Return currently active source."""
-    #     return self._active_source
-
-    # @property
-    # def state(self) -> States:
-    #     """Return current device state."""
-    #     return self._attr_state
-
-    # @property
-    # def attributes(self) -> dict[str, any]:
-    #     """Return device attributes dictionary."""
-    #     updated_data = {
-    #         MediaAttr.STATE: self.state,
-    #     }
-    #     if self.source_list:
-    #         updated_data[MediaAttr.SOURCE_LIST] = self.source_list
-    #     if self.source:
-    #         updated_data[MediaAttr.SOURCE] = self.source
-    #     return updated_data
-
-    # async def connect(self) -> bool:
-    #     """Establish a connection to the Lumagen device with retry logic."""
-    #     _LOG.debug("Connecting to Lumagen Device")
-
-    #     if self._connected:
-    #         _LOG.debug("Already connected disconnecting first")
-    #         await self.disconnect()
-
-    #     try:
-    #         await asyncio.wait_for(
-    #             self.device.open(host=self.host, port=self.port), timeout=10
-    #         )
-
-    #     except (OSError, ConnectionError, asyncio.exceptions.TimeoutError) as e:
-    #         _LOG.error(
-    #             "Failed to connect to Lumagen at %s:%d - %s", self.host, self.port, e
-    #         )
-    #         return False
-
-    #     return True
-
-    # async def _reconnect_loop(self, delay: float = 10.0):
-    #     """Try to reconnect to the device in a loop."""
-    #     _LOG.info("Starting reconnect loop to Lumagen at %s:%d", self.host, self.port)
-    #     self._attr_state = States.UNAVAILABLE
-
-    #     while not self._connected:
-    #         try:
-    #             success = await self.connect()
-    #             if success:
-    #                 _LOG.info("Reconnected to Lumagen at %s:%d", self.host, self.port)
-    #                 break
-    #         except Exception as e:
-    #             _LOG.warning("Reconnect failed: %s", e)
-
-    #         await asyncio.sleep(delay)
-
-    #     self._reconnect_task = None
-
-    # async def disconnect(self):
-    #     """Disconnect from the Lumagen device."""
-    #     if self._connected:
-    #         self._disconnecting = True  # prevent reconnect loop
-    #         label = "IP2SL device" if self.discovery else "Lumagen"
-    #         _LOG.debug("Disconnecting from %s at %s:%d", label, self.host, self.port)
-    #         await self.device.close()
-    #         self._connected = False
-    #         self._disconnecting = False  # reset for future reconnects
-
-    # async def send_command(self, command: str, parms="") -> StatusCodes:
-    #     """Send a named command to the device executor."""
-    #     if not self._connected:
-    #         _LOG.error("Connection not established.")
-    #         return ucapi.StatusCodes.SERVICE_UNAVAILABLE
-    #     return await self._execute_command(command, parms)
-
-    # async def _execute_command(
-    #     self, command: str, parms: ParamType | ParamTuple | ParamDict | None = None
-    # ) -> ucapi.StatusCodes:
-    #     """Dynamically invoke a command method from executor."""
-    #     method = getattr(self.device.executor, command, None)
-    #     if not callable(method):
-    #         _LOG.warning("No executor method found for command: %s", command)
-    #         return ucapi.StatusCodes.NOT_IMPLEMENTED
-
-    #     try:
-    #         sig = inspect.signature(method)
-    #         # Handle methods with no parameters
-    #         if len(sig.parameters) == 0:
-    #             result = method()
-    #         # Unpack parameters based on type
-    #         elif isinstance(parms, (list, tuple)):
-    #             result = method(*parms)
-    #         elif isinstance(parms, dict):
-    #             result = method(**parms)
-    #         else:
-    #             result = method(parms)
-
-    #         # Await result if it's a coroutine
-    #         if asyncio.iscoroutine(result):
-    #             await result
-
-    #         return ucapi.StatusCodes.OK
-    #     except ValueError as err:
-    #         _LOG.exception("Error executing command %s: %s", command, str(err))
-    #         return ucapi.StatusCodes.BAD_REQUEST
-
-    # async def power_on(self) -> ucapi.StatusCodes:
-    #     """Turn the device on."""
-    #     if self.is_on:
-    #         self._log_power_state_skip("on")
-    #     else:
-    #         await self.send_command("power_on")
-    #     return ucapi.StatusCodes.OK
-
-    # async def power_off(self) -> ucapi.StatusCodes:
-    #     """Turn the device off."""
-    #     if self.is_on:
-    #         await self.send_command("standby")
-    #     else:
-    #         self._log_power_state_skip("off")
-    #     return ucapi.StatusCodes.OK
-
-    # def _log_power_state_skip(self, action: str):
-    #     """Log when a power action is skipped because the device is already in the target state."""
-    #     _LOG.debug(
-    #         "Power %s skipped: Device is already %s.", action, self.device.device_status
-    #     )
-
-    # async def select_source(self, source: str) -> StatusCodes:
-    #     """Set input source on the device."""
-    #     if not source or source not in self.source_list:
-    #         _LOG.warning("Invalid source: %s", source)
-    #         return StatusCodes.BAD_REQUEST
-    #     try:
-    #         index = self.source_list.index(source) + 1
-    #         await self.device.executor.input(index)
-    #         _LOG.info("Sent source select command for input %02d", index)
-    #         return StatusCodes.OK
-    #     except Exception as e:
-    #         _LOG.error("Failed to select source '%s': %s", source, e)
-    #         return StatusCodes.BAD_REQUEST
+    def _emit_update(self, prefix: str, attr: str, value: Any) -> None:
+        """"""
+        entity_id = f"{prefix}.{self.device_id}"
+        self.events.emit(Events.UPDATE.name, entity_id, {attr: value})

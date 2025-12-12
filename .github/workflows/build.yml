@@ -51,6 +51,7 @@ jobs:
             bash -c \
             "cd /workspace && \
               python -m pip install -r requirements.txt && \
+              python -m pip install ./pylyngdorflib && \
               pyinstaller --clean --onedir --name intg-${DRIVER_ID} --collect-submodules zeroconf intg-${INTG_NAME}/driver.py"
 
       - name: Prepare artifacts

@@ -10,6 +10,7 @@ from enum import IntEnum
 from ipaddress import ip_address
 from typing import Any
 
+from pylyngdorf.const import DEFAULT_PORT
 from ucapi import (
     AbortDriverSetup,
     DriverSetupRequest,
@@ -23,13 +24,9 @@ from ucapi import (
 )
 
 import config
-from config import LyngdorfConfigDevice
-
-# from device import LyngdorfDevice
-from const import LYNGDORF_PORT, LYNGDORF_SERVICE_TYPE
+from config import LyngdorfDeviceConfig
+from const import LYNGDORF_SERVICE_TYPE
 from discover import ZeroconfDiscovery
-
-# from registry import clear_devices
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,8 +40,7 @@ class SetupSteps(IntEnum):
     DEVICE_CHOICE = 3
 
 
-# async def _handle_manual() -> RequestUserInput | SetupError:
-async def _handle_manual(port: int = LYNGDORF_PORT) -> SetupAction:
+async def _handle_manual(port: int = DEFAULT_PORT) -> SetupAction:
     """
     Returns a form for manual configuration of IP and port.
 
@@ -188,7 +184,12 @@ async def _handle_discovery() -> SetupAction:
 
         dropdown_devices: list[dict[str, Any]] = []
         for device in zc.discovered:
-            dropdown_devices.append({"host": device.addresses[0], "label": {"en": f"{device.name.split('.', 1)[0]}"}})
+            dropdown_devices.append(
+                {
+                    "host": device.addresses[0],
+                    "label": {"en": f"{device.name.split('.', 1)[0]}"},
+                }
+            )
 
         dropdown_devices.append({"host": "manual", "label": {"en": "Setup Manually"}})
 
@@ -331,7 +332,7 @@ async def _handle_creation(msg: UserDataResponse) -> SetupAction:
     """
 
     host = msg.input_values["host"]
-    port = msg.input_values["port"]
+    port = int(msg.input_values["port"])
 
     if host != "":
         try:
@@ -340,7 +341,29 @@ async def _handle_creation(msg: UserDataResponse) -> SetupAction:
             _LOG.error("The entered ip address %s is not valid", host)
             return SetupError(IntegrationSetupError.NOT_FOUND)
 
-        _LOG.info("Entered ip address: %s", host)
+        _LOG.info("Entered ip address: %s, port: %d", host, port)
+
+        # try:
+        #     port = cast(int, self.port)
+        #     receiver: Lyngdorf = Lyngdorf.create(self.host, port)
+
+        #     await receiver.async_connect()
+        #     await asyncio.sleep(0.1)
+        #     await receiver.async_disconnect()
+
+        #     if not (model := receiver.model):
+        #         errors["base"] = "unsupported"
+        #     else:
+        #         self.name = model.value
+        #         self.model = model.value
+
+        # except LyngdorfTimoutError:
+        #     errors["base"] = "timeout"
+        # except LyngdorfNetworkError:
+        #     errors["base"] = "cannot_connect"
+        # except Exception as err:
+        #     _LOGGER.exception("Unexpected error connecting: %s", err)
+        #     errors["base"] = "unknown"
 
         # # try:
         # #     # jvc = JvcProjector(ip, password=password)
@@ -365,8 +388,9 @@ async def _handle_creation(msg: UserDataResponse) -> SetupAction:
         # #     _LOG.info("Please check if you entered the correct ip of the projector")
         # #     return SetupError(IntegrationSetupError.CONNECTION_REFUSED)
 
-        id = f"lyngdorf-{host.replace('.', '-')}"
-        device = LyngdorfConfigDevice(id, host, port, model="MP-60")
+        identifier = f"lyngdorf-{host.replace('.', '-'):{port}}"
+        # TODO multichannel
+        device = LyngdorfDeviceConfig(identifier, host, port, model="MP-60")
         if (devices := config.devices) is not None:
             devices.add(device)
 
