@@ -5,7 +5,7 @@ WORKDIR /app
 COPY ./requirements.txt requirements.txt
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 
-COPY ./pylyngdorflib /app/pylyngdorflib
+COPY ./pylyngdorflib ./pylyngdorflib
 RUN pip3 install --no-cache-dir --upgrade ./pylyngdorflib -vvv
 
 RUN mkdir /config

@@ -111,9 +111,8 @@ async def main():
 
     await driver.register_all_configured_devices()
 
-    # discovery = LyngdorfDiscovery(service_type=LYNGDORF_SERVICE_TYPE, timeout=2)
-    # setup_handler = LyngdorfSetupFlow.create_handler(driver, discovery)  # type: ignore
-    setup_handler = LyngdorfSetupFlow.create_handler(driver)  # type: ignore
+    discovery = LyngdorfDiscovery(service_type=LYNGDORF_SERVICE_TYPE, timeout=2)
+    setup_handler = LyngdorfSetupFlow.create_handler(driver, discovery)  # type: ignore
 
     await driver.api.init("driver.json", setup_handler)
 
