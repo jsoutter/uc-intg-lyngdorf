@@ -1,5 +1,5 @@
 """
-Discover Lyngdorf devices in local network using SZeroconfDDP protocol.
+Discover Lyngdorf devices in local network using Zeroconf protocol.
 
 :license: Mozilla Public License Version 2.0, see LICENSE for more details.
 """
