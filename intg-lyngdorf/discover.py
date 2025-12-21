@@ -37,8 +37,8 @@ class LyngdorfDiscovery(MDNSDiscovery):
 
         # Extract name from service info (remove service suffix)
         name = service_info.name
-        if name.endswith(LYNGDORF_SERVICE_TYPE):
-            name = name.replace(LYNGDORF_SERVICE_TYPE, "")
+        if name.endswith("." + LYNGDORF_SERVICE_TYPE):
+            name = name.replace("." + LYNGDORF_SERVICE_TYPE, "")
 
         return DiscoveredDevice(
             identifier=identifier,
