@@ -12,6 +12,8 @@ from zeroconf import IPVersion
 
 from const import LYNGDORF_SERVICE_TYPE
 
+_SERVICE_TYPE = "." + LYNGDORF_SERVICE_TYPE
+
 
 class LyngdorfDiscovery(MDNSDiscovery):
     """mDNS discovery for Lyngdorf devices."""
@@ -37,8 +39,8 @@ class LyngdorfDiscovery(MDNSDiscovery):
 
         # Extract name from service info (remove service suffix)
         name = service_info.name
-        if name.endswith("." + LYNGDORF_SERVICE_TYPE):
-            name = name.replace("." + LYNGDORF_SERVICE_TYPE, "")
+        if name.endswith(_SERVICE_TYPE):
+            name = name.replace(_SERVICE_TYPE, "")
 
         return DiscoveredDevice(
             identifier=identifier,
