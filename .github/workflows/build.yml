@@ -9,7 +9,7 @@ name: "Build & Draft Release"
 env:
   INTG_NAME: lyngdorf
   # Python version to use in the builder image. See https://hub.docker.com/r/unfoldedcircle/r2-pyinstaller for possible versions.
-  PYTHON_VER: 3.11.13-0.4.0
+  PYTHON_VER: 3.11.12-0.3.0
 
 jobs:
   build:
@@ -54,7 +54,7 @@ jobs:
             "cd /workspace && \
               python -m pip install -r requirements.txt && \
               python -m pip install ./pylyngdorflib && \
-              pyinstaller --clean --onedir --name intg-${DRIVER_ID} --collect-submodules zeroconf intg-${INTG_NAME}/driver.py"
+              pyinstaller --clean --onedir --name intg-${DRIVER_ID} --collect-all zeroconf intg-${INTG_NAME}/driver.py"
 
       - name: Prepare artifacts
         shell: bash
