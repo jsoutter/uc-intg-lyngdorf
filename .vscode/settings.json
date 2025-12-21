@@ -18,7 +18,7 @@
     },
     // Include src/ in import paths
     "python.analysis.extraPaths": [
-        "src"
+        "intg-lyngdorf"
     ],
     // Test discovery
     "python.testing.unittestEnabled": false,

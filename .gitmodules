@@ -1,0 +1,3 @@
+[submodule "pylyngdorflib"]
+	path = pylyngdorflib
+	url = https://github.com/jsoutter/pylyngdorf.git

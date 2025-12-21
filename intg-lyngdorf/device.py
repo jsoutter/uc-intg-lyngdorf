@@ -1,152 +1,220 @@
-"""Provides connection utilities for communicating with a Lyngdorf device."""
+"""
+This module implements communication for the Lyngdorf integration.
 
-import asyncio
+:license: Mozilla Public License Version 2.0, see LICENSE for more details.
+"""
+
 import logging
-from asyncio import AbstractEventLoop, Task
-from enum import IntEnum
+from asyncio import AbstractEventLoop
+from enum import StrEnum
+from types import MappingProxyType
 from typing import Any
 
-from pyee.asyncio import AsyncIOEventEmitter
-from pylyngdorf.const import DeviceModel, LyngdorfQueries
+from pylyngdorf.const import DeviceModel, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
+from ucapi import EntityTypes
 from ucapi.media_player import Attributes as MediaAttr
 from ucapi.sensor import Attributes as SensorAttr
+from ucapi_framework import BaseConfigManager, PersistentConnectionDevice, create_entity_id
+from ucapi_framework.device import DeviceEvents
 
-from const import EntityPrefix, SensorEntityPrefix
+from const import SENSOR_TYPES, LyngdorfConfig, LyngdorfSensorConfig
 
 _LOG = logging.getLogger(__name__)
 
 
-class Events(IntEnum):
-    """Internal driver events."""
+class PowerState(StrEnum):
+    """Power state enumeration for the device."""
 
-    CONNECTING = 0
-    CONNECTED = 1
-    DISCONNECTED = 2
-    ERROR = 3
-    UPDATE = 4
+    OFF = "OFF"
+    ON = "ON"
 
 
-class States(IntEnum):
-    """State of a connected device."""
-
-    UNKNOWN = 0
-    UNAVAILABLE = 1
-    OFF = 2
-    ON = 3
-
-
-class LyngdorfDevice:
+class LyngdorfDevice(PersistentConnectionDevice):
     """Handles communication with a Lyngdorf over TCP."""
 
     def __init__(
         self,
-        host: str,
-        port: int,
-        model: DeviceModel,
-        device_id: str | None = None,
+        device_config: LyngdorfConfig,
         loop: AbstractEventLoop | None = None,
-    ):
-        # Identity and connection config
-        self.device_id = device_id or "unknown"
-        self.host = host
-        self.port = port
-        self.model = model
-        self._device: Lyngdorf
+        config_manager: BaseConfigManager[LyngdorfConfig] | None = None,
+    ) -> None:
+        """Create instance."""
+        super().__init__(  # type: ignore
+            device_config,
+            loop,
+            config_manager=config_manager,
+        )
 
-        # Event loop and internal connection state
-        self._event_loop = loop or asyncio.get_running_loop()
-        self.events = AsyncIOEventEmitter(self._event_loop)
+        try:
+            model = DeviceModel(device_config.model)
+        except ValueError:
+            model = DeviceModel.MP60
 
-        self._reconnect_task: Task | None = None
-        self._connected: bool = False
-        self._disconnecting: bool = False
-        self._is_alive: bool = False
-        self._attr_state = States.OFF
+        self._receiver: Lyngdorf = Lyngdorf.create(
+            device_config.address,
+            device_config.port,
+            device_model=model,
+        )
 
-        # Add properties for lists
-        # sources, sounds modes, voicings, focus positions
+        self._available_sensors = tuple(
+            sensor
+            for sensor in SENSOR_TYPES
+            if not sensor.multichannel or sensor.multichannel == device_config.multichannel
+        )
+        self._indentifier_sensor = MappingProxyType({s.identifier: s for s in self._available_sensors})
+        self._event_sensor = MappingProxyType({s.event: s for s in self._available_sensors})
 
-    def __repr__(self):
-        return f"<LyngdorfDevice id='{self.device_id}' at {self.host}:{self.port}>"
+    @property
+    def identifier(self) -> str:
+        """Return the device identifier."""
+        return self._device_config.identifier
 
-    def _callback(self, event: LyngdorfQueries):
-        """"""
-        match event:
-            case LyngdorfQueries.POWER:
-                # Derive value
-                self._attr_state = States.ON
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.STATE, self._attr_state)
-                self._emit_update(EntityPrefix.REMOTE, MediaAttr.STATE, self._attr_state)
+    @property
+    def name(self) -> str:
+        """Return the device name."""
+        return self._device_config.name
 
-            case LyngdorfQueries.VOLUME:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.VOLUME, self._device.volume_percent)
-                self._emit_update(SensorEntityPrefix.VOLUME, SensorAttr.VALUE, self._device.volume)
+    @property
+    def address(self) -> str | None:
+        """Return the optional device address."""
+        return self.device_config.address
 
-            case LyngdorfQueries.MUTE:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.MUTED, self._device.muted)
+    @property
+    def log_id(self) -> str:
+        """Return a log identifier."""
+        return self.device_config.identifier
 
-            case LyngdorfQueries.SOURCE_LIST:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE_LIST, self._device.sources)
+    @property
+    def state(self) -> PowerState | None:
+        """Return the current power state."""
+        return PowerState.ON if self.receiver.power else PowerState.OFF
 
-            case LyngdorfQueries.SOURCE:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOURCE, self._device.source)
+    @property
+    def attributes(self) -> dict[str, Any]:
+        """Return the device attributes."""
+        updated_data: dict[str, Any] = {
+            MediaAttr.STATE: self.state,
+            MediaAttr.MUTED: self.receiver.muted,
+            MediaAttr.VOLUME: self.volume_percent,
+        }
 
-            case LyngdorfQueries.STREAM_TYPE:
-                self._emit_update(SensorEntityPrefix.STREAM_TYPE, SensorAttr.VALUE, self._device.stream_type)
+        if self.receiver.source:
+            updated_data[MediaAttr.SOURCE] = self.receiver.source
+        if self.receiver.sources:
+            updated_data[MediaAttr.SOURCE_LIST] = self.receiver.sources
+        if self.receiver.audio_mode:
+            updated_data[MediaAttr.SOUND_MODE] = self.receiver.audio_mode
+        if self.receiver.audio_modes:
+            updated_data[MediaAttr.SOUND_MODE_LIST] = self.receiver.audio_modes
 
-            case LyngdorfQueries.VOICING:
-                self._emit_update(SensorEntityPrefix.VOICING, SensorAttr.VALUE, self._device.voicing)
+        return updated_data
 
-            case LyngdorfQueries.FOCUS_POSITION:
-                self._emit_update(SensorEntityPrefix.FOCUS_POSITION, SensorAttr.VALUE, self._device.focus_position)
+    @property
+    def receiver(self) -> Lyngdorf:
+        """Return the device identifier."""
+        return self._receiver
 
-            case LyngdorfQueries.AUDIO_MODE_LIST:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE_LIST, self._device.audio_modes)
+    @property
+    def volume_percent(self) -> float:
+        """Return the volume percent of the device as float."""
+        return round(self.receiver.volume_percent * 100, 1) if self.receiver.volume_percent else 0.0
 
-            case LyngdorfQueries.AUDIO_MODE:
-                self._emit_update(EntityPrefix.MEDIA_PLAYER, MediaAttr.SOUND_MODE, self._device.audio_mode)
+    @property
+    def available_sensors(self) -> tuple[LyngdorfSensorConfig, ...]:
+        """Configuration for available sensors."""
+        return self._available_sensors
 
-            case LyngdorfQueries.AUDIO_INPUT:
-                self._emit_update(SensorEntityPrefix.AUDIO_INPUT, SensorAttr.VALUE, self._device.audio_input)
+    def sensor_value(self, identifier: str) -> dict[str, Any]:
+        """Get sensor value using identifier."""
+        sensor = self._indentifier_sensor.get(identifier)
+        return self._sensor_value(sensor) if sensor else {}
 
-            case LyngdorfQueries.AUDIO_TYPE:
-                self._emit_update(SensorEntityPrefix.AUDIO_TYPE, SensorAttr.VALUE, self._device.audio_type)
+    async def establish_connection(self):
+        """Establish connection."""
+        await self.receiver.async_connect()
 
-            case LyngdorfQueries.VIDEO_INPUT:
-                self._emit_update(SensorEntityPrefix.VIDEO_INPUT, SensorAttr.VALUE, self._device.video_input)
+        self._update_attributes()
+        self._update_sensors()
+        self.receiver.set_notification_callback(self._update_entities)
+        return self.receiver
 
-            case LyngdorfQueries.VIDEO_TYPE:
-                self._emit_update(SensorEntityPrefix.VIDEO_TYPE, SensorAttr.VALUE, self._device.video_type)
+    async def close_connection(self) -> None:
+        """Close connection."""
+        await self.receiver.async_disconnect()
 
-            case LyngdorfQueries.VIDEO_OUTPUT:
-                self._emit_update(SensorEntityPrefix.VIDEO_OUTPUT, SensorAttr.VALUE, self._device.video_output)
+    async def maintain_connection(self) -> None:
+        """Maintain connection."""
+        await self.receiver.wait_while_connected()
 
-            case LyngdorfQueries.LIPSYNC:
-                self._emit_update(SensorEntityPrefix.LIPSYNC, SensorAttr.VALUE, self._device.lipsync)
+    def _update_entities(self, event: LyngdorfQuery) -> None:
+        """Update entities based upon event."""
+        _LOG.debug("Event %s for device id %s", event.name, self.identifier)
 
-            case LyngdorfQueries.TRIM_BASS:
-                self._emit_update(SensorEntityPrefix.BASS_TRIM, SensorAttr.VALUE, self._device.bass_trim)
+        if event in {
+            LyngdorfQuery.POWER,
+            LyngdorfQuery.VOLUME,
+            LyngdorfQuery.MUTE,
+            LyngdorfQuery.SOURCE,
+            LyngdorfQuery.SOURCE_LIST,
+            LyngdorfQuery.AUDIO_MODE,
+            LyngdorfQuery.AUDIO_MODE_LIST,
+        }:
+            self._update_attributes()
 
-            case LyngdorfQueries.TRIM_TREBLE:
-                self._emit_update(SensorEntityPrefix.TREBLE_TRIM, SensorAttr.VALUE, self._device.treble_trim)
+        if event == LyngdorfQuery.POWER:
+            self._update_remote()
+            self._update_sensors()
 
-            case LyngdorfQueries.TRIM_CENTER:
-                self._emit_update(SensorEntityPrefix.CENTER_TRIM, SensorAttr.VALUE, self._device.center_trim)
+        if sensor := self._event_sensor.get(event):
+            self._update_sensor(sensor)
 
-            case LyngdorfQueries.TRIM_HEIGHTS:
-                self._emit_update(SensorEntityPrefix.HEIGHTS_TRIM, SensorAttr.VALUE, self._device.heights_trim)
+    def _update_attributes(self) -> None:
+        """Update media player attributes."""
+        self.events.emit(
+            DeviceEvents.UPDATE,  # type: ignore
+            create_entity_id(EntityTypes.MEDIA_PLAYER, self.identifier),
+            self.attributes,
+        )
 
-            case LyngdorfQueries.TRIM_LFE:
-                self._emit_update(SensorEntityPrefix.LFE_TRIM, SensorAttr.VALUE, self._device.lfe_trim)
+    def _update_remote(self) -> None:
+        """Update media player attributes."""
+        self.events.emit(
+            DeviceEvents.UPDATE,  # type: ignore
+            create_entity_id(EntityTypes.REMOTE, self.identifier),
+            {SensorAttr.STATE: self.state},
+        )
 
-            case LyngdorfQueries.TRIM_SURROUNDS:
-                self._emit_update(SensorEntityPrefix.SURROUNDS_TRIM, SensorAttr.VALUE, self._device.surrounds_trim)
+    def _update_sensors(self) -> None:
+        """Update available sensor values."""
+        for sensor in self._available_sensors:
+            self._update_sensor(sensor)
 
-            case _:
-                pass
+    def _update_sensor(self, sensor: LyngdorfSensorConfig) -> None:
+        """Update sensor value."""
+        self.events.emit(
+            DeviceEvents.UPDATE,  # type: ignore
+            create_entity_id(EntityTypes.SENSOR, self.identifier, sensor.identifier),
+            self._sensor_value(sensor),
+        )
 
-    def _emit_update(self, prefix: str, attr: str, value: Any) -> None:
-        """"""
-        entity_id = f"{prefix}.{self.device_id}"
-        self.events.emit(Events.UPDATE.name, entity_id, {attr: value})
+    def _sensor_value(self, sensor: LyngdorfSensorConfig) -> dict[str, Any]:
+        """Return value for sensor"""
+        value = sensor.value_fn(self.receiver)
+        update: dict[str, Any] = {
+            SensorAttr.STATE: self.state,
+            SensorAttr.VALUE: value if self.state == PowerState.ON and value is not None else sensor.default_value,
+            **({SensorAttr.UNIT: sensor.unit_of_measurement} if sensor.unit_of_measurement is not None else {}),
+        }
+        return update
+
+    # ##########
+    # # Setter #
+    # ##########
+    async def set_volume(self, volume: float):
+        """Set device volume percent."""
+        await self.receiver.async_set_volume_percent(volume / 100)
+
+    async def mute_toggle(self) -> None:
+        """Mute device."""
+        await self.receiver.async_mute(not self.receiver.muted)

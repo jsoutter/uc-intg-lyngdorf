@@ -1,54 +1,11 @@
-[build-system]
-requires = ["setuptools>=65.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "uc-intg-lyngdorf"
-version = "0.0.1"
-description = "Lyngdorf integration for Unfolded Circle Remote"
-license = "MPL-2.0"
-license-files = ["LICENSE"]
-authors = [
-    {name = "James Soutter", email = "james.soutter@gmail.com"}
-]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: End Users/Desktop",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Home Automation",
-    "Topic :: Multimedia :: Video",
-]
+version = "1.0.0"
+description = "Unfolded Circle Hunter Douglas Lyngdorf Integration"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "ucapi>=0.3.1"
+    "ucapi==0.4.0",
+    "ucapi-framework==1.2.2",
+    "zeroconf>=0.147.0",
 ]
-
-[project.readme]
-file = "README.md"
-content-type = "text/markdown; charset=UTF-8"
-
-[project.optional-dependencies]
-testing = [
-    "pytest",
-    "pylint",
-    "flake8-docstrings",
-    "flake8",
-    "black",
-    "isort",
-]
-
-[tool.setuptools]
-platforms = ["any"]
-include-package-data = false
-
-[tool.flake8]
-max-line-length = 120
-
-[tool.isort]
-profile = "black"
-
-[tool.mypy]
-ignore_missing_imports = true
-ignore_missing_stubs = true
