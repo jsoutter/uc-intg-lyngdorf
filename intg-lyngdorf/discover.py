@@ -14,7 +14,7 @@ from const import LYNGDORF_SERVICE_TYPE
 
 
 class LyngdorfDiscovery(MDNSDiscovery):
-    """mDNS discovery for Lutron hubs."""
+    """mDNS discovery for Lyngdorf devices."""
 
     def parse_mdns_service(self, service_info: Any) -> DiscoveredDevice | None:
         """

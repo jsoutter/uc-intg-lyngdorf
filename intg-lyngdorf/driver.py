@@ -102,7 +102,6 @@ async def main():
         entity_classes=[],
     )
 
-    # Initialize configuration manager with device callbacks
     driver.config_manager = BaseConfigManager(
         get_config_path(driver.api.config_dir_path),
         driver.on_device_added,
@@ -110,11 +109,11 @@ async def main():
         config_class=LyngdorfConfig,
     )
 
-    # Connect to all configured PowerView hubs
     await driver.register_all_configured_devices()
 
     discovery = LyngdorfDiscovery(service_type=LYNGDORF_SERVICE_TYPE, timeout=2)
     setup_handler = LyngdorfSetupFlow.create_handler(driver, discovery)  # type: ignore
+
     await driver.api.init("driver.json", setup_handler)
 
     await asyncio.Future()
