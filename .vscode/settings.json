@@ -1,0 +1,29 @@
+{
+    // Use the local virtual environment
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    // Use Ruff for formatting
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        },
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+    },
+    // Type checking
+    "python.analysis.typeCheckingMode": "strict",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingTypeStubs": "none"
+    },
+    // Include src/ in import paths
+    "python.analysis.extraPaths": [
+        "intg-lyngdorf"
+    ],
+    // Test discovery
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": [
+        "tests"
+    ]
+}
