@@ -55,9 +55,10 @@ class LyngdorfRemote(Remote):
             # simple_commands=RemoteDef.simple_commands,
             # button_mapping=self.create_button_mappings(),
             # ui_pages=self.create_ui(),
+            cmd_handler=self.command,  # type: ignore
         )
 
-    async def command(self, cmd_id: str, params: dict[str, Any] | None = None) -> StatusCodes:
+    async def command(self, cmd_id: str, params: dict[str, Any] | None = None) -> StatusCodes:  # type: ignore
         """
         Remote entity command handler.
 
