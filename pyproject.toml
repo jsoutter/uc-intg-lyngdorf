@@ -5,7 +5,7 @@ description = "Unfolded Circle Hunter Douglas Lyngdorf Integration"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "ucapi==0.4.0",
+    "ucapi==0.5.1",
     "ucapi-framework==1.2.2",
     "zeroconf>=0.147.0",
 ]
