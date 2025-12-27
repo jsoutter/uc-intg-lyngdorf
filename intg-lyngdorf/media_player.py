@@ -27,7 +27,10 @@ features = [
     media_player.Features.NEXT,
     media_player.Features.PREVIOUS,
     media_player.Features.SELECT_SOURCE,
-    # MP devices only
+]
+
+multichannel_features = [
+    media_player.Features.SELECT_SOUND_MODE,
     # media_player.Features.DPAD,
     # media_player.Features.NUMPAD,
     # media_player.Features.MENU,
@@ -45,7 +48,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
         entity_id = create_entity_id(EntityTypes.MEDIA_PLAYER, config_device.identifier)
 
         if config_device.multichannel:
-            features.append(media_player.Features.SELECT_SOUND_MODE)
+            features.append(*multichannel_features)
 
         _LOG.debug("Initializing media player entity: %s", entity_id)
 
@@ -69,11 +72,11 @@ class LyngdorfMediaPlayer(MediaPlayer):
                 ),
             },
             device_class=DeviceClasses.RECEIVER,
-            cmd_handler=self.media_player_cmd_handler,  # type: ignore
+            cmd_handler=self.cmd_handler,
         )
 
-    async def media_player_cmd_handler(  # noqa: C901
-        self, entity: MediaPlayer, cmd_id: str, params: dict[str, Any] | None
+    async def cmd_handler(  # noqa: C901
+        self, entity: MediaPlayer, cmd_id: str, params: dict[str, Any] | None, websocket: Any
     ) -> StatusCodes:
         """
         Media-player entity command handler.
@@ -123,6 +126,11 @@ class LyngdorfMediaPlayer(MediaPlayer):
                 case Commands.SELECT_SOUND_MODE:
                     mode: str = params.get("mode")  # type: ignore
                     await self._device.receiver.async_set_audio_mode(mode)
+                # media_player.Features.DPAD,
+                # media_player.Features.NUMPAD,
+                # media_player.Features.MENU,
+                # media_player.Features.INFO,
+                # media_player.Features.SETTINGS,
                 case _:
                     return StatusCodes.NOT_IMPLEMENTED
 
