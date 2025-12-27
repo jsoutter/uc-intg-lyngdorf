@@ -137,9 +137,7 @@ jobs:
 
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
-        env:
-          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        uses: actions/download-artifact@v4
     
       - name: Extract build archives from downloaded files
         run: |
