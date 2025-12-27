@@ -15,17 +15,13 @@ jobs:
   build:
     name: Build Release
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      actions: write
     #Save version to env output variable to be able to use it in the following release job as a tag
     outputs:
       version: ${{ steps.get-version-and-id.outputs.VERSION }}
       driver_id: ${{ steps.get-version-and-id.outputs.DRIVER_ID }}
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           # History of 200 should be more than enough to calculate commit count since last release tag
           fetch-depth: 200
@@ -91,10 +87,9 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           submodules: true
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
@@ -119,7 +114,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -133,12 +128,11 @@ jobs:
     needs: [build, docker]
     permissions:
       contents: write
-      actions: read
 
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
-    
+
       - name: Extract build archives from downloaded files
         run: |
           ls -R
