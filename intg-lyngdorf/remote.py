@@ -190,6 +190,9 @@ class LyngdorfRemote(Remote):
             create_btn_mapping(Buttons.VOLUME_UP, media_player.Commands.VOLUME_UP),
             create_btn_mapping(Buttons.VOLUME_DOWN, media_player.Commands.VOLUME_DOWN),
             create_btn_mapping(Buttons.MUTE, media_player.Commands.MUTE_TOGGLE),
+            create_btn_mapping(Buttons.PLAY, media_player.Commands.PLAY_PAUSE),
+            create_btn_mapping(Buttons.NEXT, media_player.Commands.NEXT),
+            create_btn_mapping(Buttons.PREV, media_player.Commands.PREVIOUS),
         ]
 
         if config_device.multichannel:
