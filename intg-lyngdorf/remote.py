@@ -58,8 +58,6 @@ class LyngdorfRemote(Remote):
             base_commands += list(MULTICHANNEL_SIMPLE_COMMANDS_MAP.keys())
         self._simple_commands: list[str] = base_commands
 
-        _LOG.debug("Simple commands: %s", self._simple_commands)
-
         _LOG.debug("Initializing remote entity: %s", entity_id)
 
         super().__init__(
