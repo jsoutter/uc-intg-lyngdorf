@@ -21,7 +21,7 @@ class LyngdorfSensor(Sensor):
 
     def __init__(self, config_device: LyngdorfConfig, sensor: LyngdorfSensorConfig):
         """Initialize a Lyngdorf Sensor entity."""
-        self.default_value = sensor.default_value
+        self.default_value: str = sensor.default_value
 
         entity_id = create_entity_id(EntityTypes.SENSOR, config_device.identifier, sensor.identifier)
         attributes: dict[str, Any] = {

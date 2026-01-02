@@ -6,13 +6,12 @@ This module implements communication for the Lyngdorf integration.
 
 import logging
 from asyncio import AbstractEventLoop
-from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
 
 from pylyngdorf.const import DeviceModel, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
-from ucapi import EntityTypes
+from ucapi import EntityTypes, media_player
 from ucapi.media_player import Attributes as MediaAttr
 from ucapi.sensor import Attributes as SensorAttr
 from ucapi_framework import BaseConfigManager, PersistentConnectionDevice, create_entity_id
@@ -21,13 +20,6 @@ from ucapi_framework.device import DeviceEvents
 from const import SENSOR_TYPES, LyngdorfConfig, LyngdorfSensorConfig
 
 _LOG = logging.getLogger(__name__)
-
-
-class PowerState(StrEnum):
-    """Power state enumeration for the device."""
-
-    OFF = "OFF"
-    ON = "ON"
 
 
 class LyngdorfDevice(PersistentConnectionDevice):
@@ -86,9 +78,9 @@ class LyngdorfDevice(PersistentConnectionDevice):
         return self.device_config.identifier
 
     @property
-    def state(self) -> PowerState | None:
+    def state(self) -> media_player.States | None:
         """Return the current power state."""
-        return PowerState.ON if self.receiver.power else PowerState.OFF
+        return media_player.States.ON if self.receiver.power else media_player.States.OFF
 
     @property
     def attributes(self) -> dict[str, Any]:
@@ -96,7 +88,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
         updated_data: dict[str, Any] = {
             MediaAttr.STATE: self.state,
             MediaAttr.MUTED: self.receiver.muted,
-            MediaAttr.VOLUME: self.volume_percent,
+            MediaAttr.VOLUME: self.volume_level,
         }
 
         if self.receiver.source:
@@ -116,9 +108,9 @@ class LyngdorfDevice(PersistentConnectionDevice):
         return self._receiver
 
     @property
-    def volume_percent(self) -> float:
+    def volume_level(self) -> float:
         """Return the volume percent of the device as float."""
-        return round(self.receiver.volume_percent * 100, 1) if self.receiver.volume_percent else 0.0
+        return round(self.receiver.volume_level * 100, 1) if self.receiver.volume_level else 0.0
 
     @property
     def available_sensors(self) -> tuple[LyngdorfSensorConfig, ...]:
@@ -203,7 +195,9 @@ class LyngdorfDevice(PersistentConnectionDevice):
         value = sensor.value_fn(self.receiver)
         update: dict[str, Any] = {
             SensorAttr.STATE: self.state,
-            SensorAttr.VALUE: value if self.state == PowerState.ON and value is not None else sensor.default_value,
+            SensorAttr.VALUE: value
+            if self.state == media_player.States.ON and value is not None
+            else sensor.default_value,
             **({SensorAttr.UNIT: sensor.unit_of_measurement} if sensor.unit_of_measurement is not None else {}),
         }
         return update
@@ -213,7 +207,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
     # ##########
     async def set_volume(self, volume: float):
         """Set device volume percent."""
-        await self.receiver.async_set_volume_percent(volume / 100)
+        await self.receiver.async_set_volume_level(volume / 100)
 
     async def mute_toggle(self) -> None:
         """Mute device."""

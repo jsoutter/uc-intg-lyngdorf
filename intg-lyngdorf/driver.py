@@ -10,14 +10,14 @@ import logging
 import os
 from typing import Any
 
-from ucapi import Entity
+from ucapi import Entity, media_player
 from ucapi.sensor import Attributes as SensorAttr
 from ucapi_framework import BaseConfigManager, BaseIntegrationDriver, get_config_path
 
 from const import LYNGDORF_SERVICE_TYPE, LyngdorfConfig
 from device import LyngdorfDevice
 from discover import LyngdorfDiscovery
-from media_player import LyngdorfMediaPlayer, media_player
+from media_player import LyngdorfMediaPlayer
 from remote import LyngdorfRemote
 from sensor import LyngdorfSensor
 from setup import LyngdorfSetupFlow
@@ -54,33 +54,32 @@ class LyngdorfIntegrationDriver(BaseIntegrationDriver[LyngdorfDevice, LyngdorfCo
             _LOG.debug("Entity %s is not configured, ignoring", entity_id)
             return
 
-        if isinstance(configured_entity, LyngdorfRemote | LyngdorfSensor):
-            device_id = self.device_from_entity_id(entity_id)
-            if device_id is None:
-                return
+        device_id = self.device_from_entity_id(entity_id)
+        if device_id is None:
+            return
 
-            device = self._configured_devices.get(device_id)
-            if device is None:
-                _LOG.warning("Device %s not found for entity %s", device_id, entity_id)
-                return
+        device = self._configured_devices.get(device_id)
+        if device is None:
+            _LOG.warning("Device %s not found for entity %s", device_id, entity_id)
+            return
 
-            state = (
-                self.map_device_state(device.state)
-                if not device.is_connected or device.state
-                else media_player.States.UNKNOWN
-            )
+        state = (
+            self.map_device_state(device.state)
+            if not device.is_connected or device.state
+            else media_player.States.UNAVAILABLE
+        )
 
-            update: dict[str, Any] = {}
-            if isinstance(configured_entity, LyngdorfSensor) and (
-                sub_device_id := self.sub_device_from_entity_id(entity_id)
-            ):
-                update.update(device.sensor_value(sub_device_id))
+        update: dict[str, Any] = {}
+        if isinstance(configured_entity, LyngdorfSensor) and (
+            sub_device_id := self.sub_device_from_entity_id(entity_id)
+        ):
+            update.update(device.sensor_value(sub_device_id))
 
-            update.update({SensorAttr.STATE: state})
-            self.api.configured_entities.update_attributes(entity_id, update)
+        elif isinstance(configured_entity, LyngdorfMediaPlayer):
+            update.update(device.attributes)
 
-        else:
-            await super().refresh_entity_state(entity_id)
+        update.update({SensorAttr.STATE: state})
+        self.api.configured_entities.update_attributes(entity_id, update)
 
 
 async def main():

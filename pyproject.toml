@@ -1,7 +1,7 @@
 [project]
 name = "uc-intg-lyngdorf"
-version = "1.0.0"
-description = "Unfolded Circle Hunter Douglas Lyngdorf Integration"
+version = "0.3.0"
+description = "Unfolded Circle Lyngdorf Integration"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
