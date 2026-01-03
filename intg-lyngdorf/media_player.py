@@ -5,18 +5,18 @@ Media-player entity functions for the Lyngdorf integration.
 """
 
 import logging
-from typing import Any
+from typing import Any, Final, cast
 
 from ucapi import EntityTypes, MediaPlayer, StatusCodes, media_player
-from ucapi.media_player import Attributes, Commands, DeviceClasses
+from ucapi.media_player import Attributes, DeviceClasses
 from ucapi_framework import create_entity_id
 
-from const import LyngdorfConfig
+from const import MEDIA_PLAYER_COMMANDS_MAP, LyngdorfConfig
 from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
-features = [
+FEATURES: Final[tuple[media_player.Features, ...]] = (
     media_player.Features.ON_OFF,
     media_player.Features.VOLUME,
     media_player.Features.VOLUME_UP_DOWN,
@@ -27,16 +27,16 @@ features = [
     media_player.Features.NEXT,
     media_player.Features.PREVIOUS,
     media_player.Features.SELECT_SOURCE,
-]
+)
 
-multichannel_features = [
+MULTICHANNEL_FEATURES: Final[tuple[media_player.Features, ...]] = (
     media_player.Features.SELECT_SOUND_MODE,
-    # media_player.Features.DPAD,
-    # media_player.Features.NUMPAD,
-    # media_player.Features.MENU,
-    # media_player.Features.INFO,
-    # media_player.Features.SETTINGS,
-]
+    media_player.Features.DPAD,
+    media_player.Features.NUMPAD,
+    media_player.Features.MENU,
+    media_player.Features.INFO,
+    media_player.Features.SETTINGS,
+)
 
 
 class LyngdorfMediaPlayer(MediaPlayer):
@@ -44,11 +44,12 @@ class LyngdorfMediaPlayer(MediaPlayer):
 
     def __init__(self, config_device: LyngdorfConfig, device: LyngdorfDevice):
         """Initialize the class."""
-        self._device = device
+        self._device: LyngdorfDevice = device
         entity_id = create_entity_id(EntityTypes.MEDIA_PLAYER, config_device.identifier)
 
+        features = cast(list[media_player.Features], list(FEATURES))
         if config_device.multichannel:
-            features.append(*multichannel_features)
+            features.extend(MULTICHANNEL_FEATURES)
 
         _LOG.debug("Initializing media player entity: %s", entity_id)
 
@@ -59,7 +60,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
             attributes={
                 Attributes.STATE: device.state,
                 Attributes.MUTED: device.receiver.muted,
-                Attributes.VOLUME: device.volume_percent,
+                Attributes.VOLUME: device.volume_level,
                 Attributes.SOURCE: device.receiver.source,
                 Attributes.SOURCE_LIST: device.receiver.sources,
                 **(
@@ -91,48 +92,46 @@ class LyngdorfMediaPlayer(MediaPlayer):
         _LOG.info("Got %s command request: %s %s", self.id, cmd_id, params if params else "")
 
         try:
-            cmd = Commands(cmd_id)
+            cmd = media_player.Commands(cmd_id)
         except ValueError:
             return StatusCodes.BAD_REQUEST
 
         try:
             match cmd:
-                case Commands.ON:
+                case media_player.Commands.ON:
                     await self._device.receiver.async_power_on()
-                case Commands.OFF:
+                case media_player.Commands.OFF:
                     await self._device.receiver.async_power_off()
-                case Commands.VOLUME:
+                case media_player.Commands.VOLUME:
                     volume: float = params.get("volume")  # type: ignore
                     await self._device.set_volume(volume)
-                case Commands.VOLUME_UP:
+                case media_player.Commands.VOLUME_UP:
                     await self._device.receiver.async_volume_up()
-                case Commands.VOLUME_DOWN:
+                case media_player.Commands.VOLUME_DOWN:
                     await self._device.receiver.async_volume_down()
-                case Commands.MUTE_TOGGLE:
+                case media_player.Commands.MUTE_TOGGLE:
                     await self._device.mute_toggle()
-                case Commands.MUTE:
+                case media_player.Commands.MUTE:
                     await self._device.receiver.async_mute(True)
-                case Commands.UNMUTE:
+                case media_player.Commands.UNMUTE:
                     await self._device.receiver.async_mute(False)
-                case Commands.PLAY_PAUSE:
+                case media_player.Commands.PLAY_PAUSE:
                     await self._device.receiver.async_play()
-                case Commands.NEXT:
+                case media_player.Commands.NEXT:
                     await self._device.receiver.async_next()
-                case Commands.PREVIOUS:
+                case media_player.Commands.PREVIOUS:
                     await self._device.receiver.async_previous()
-                case Commands.SELECT_SOURCE:
+                case media_player.Commands.SELECT_SOURCE:
                     source: str = params.get("source")  # type: ignore
                     await self._device.receiver.async_set_source(source)
-                case Commands.SELECT_SOUND_MODE:
+                case media_player.Commands.SELECT_SOUND_MODE:
                     mode: str = params.get("mode")  # type: ignore
                     await self._device.receiver.async_set_audio_mode(mode)
-                # media_player.Features.DPAD,
-                # media_player.Features.NUMPAD,
-                # media_player.Features.MENU,
-                # media_player.Features.INFO,
-                # media_player.Features.SETTINGS,
                 case _:
-                    return StatusCodes.NOT_IMPLEMENTED
+                    if mapped_cmd := MEDIA_PLAYER_COMMANDS_MAP.get(cmd_id):
+                        await self._device.receiver.async_send_command(mapped_cmd)
+                    else:
+                        return StatusCodes.NOT_IMPLEMENTED
 
         except Exception as ex:
             _LOG.error("Error executing command %s: %s", cmd_id, ex)

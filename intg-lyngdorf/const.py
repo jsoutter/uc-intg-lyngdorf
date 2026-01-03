@@ -6,16 +6,19 @@ This module implements constants for the Lyngdorf integration.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any
 
-from pylyngdorf.const import LyngdorfQuery
+from pylyngdorf.const import LyngdorfCommand, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
+from ucapi import media_player
 
 LYNGDORF_SERVICE_TYPE = "_slactrl._tcp.local."
 DEFAULT_DB_VALUE = "--.-"
 
 
 def format_db(value: float | None) -> str | None:
+    """Format value to one decimal place."""
     return None if value is None else f"{value:.1f}"
 
 
@@ -178,30 +181,63 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
 )
 
 
-# class SimpleCommands(str, Enum):
-#     """Enumeration of supported remote command names for Lyngdorf control."""
+SIMPLE_COMMANDS_MAP = MappingProxyType(
+    {
+        "SOURCE_NEXT": LyngdorfCommand.SOURCE_NEXT,
+        "SOURCE_PREV": LyngdorfCommand.SOURCE_PREV,
+        "VOICING_NEXT": LyngdorfCommand.VOICING_NEXT,
+        "VOICING_PREV": LyngdorfCommand.VOICING_PREV,
+        "FOCUS_POSITION_NEXT": LyngdorfCommand.FOCUS_POSITION_NEXT,
+        "FOCUS_POSITION_PREV": LyngdorfCommand.FOCUS_POSITION_PREV,
+    }
+)
 
-#     BACK = "back"
-#     MUTE_TOGGLE = "mute toggle"
-#     UP = "up"
-#     DOWN = "down"
-#     ENTER = "ok"
-#     LEFT = "left"
-#     RIGHT = "right"
-#     DIGIT_0 = "0"
-#     DIGIT_1 = "1"
-#     DIGIT_2 = "2"
-#     DIGIT_3 = "3"
-#     DIGIT_4 = "4"
-#     DIGIT_5 = "5"
-#     DIGIT_6 = "6"
-#     DIGIT_7 = "7"
-#     DIGIT_8 = "8"
-#     DIGIT_9 = "9"
-#     EXIT = "exit"
-#     MENU = "menu"
-#     SETUP = "setup"
-#     SRC_DOWN = "src down"
-#     SRC_UP = "src up"
-#     VOLUME_DOWN = "volume down"
-#     VOLUME_UP = "volume up"
+
+MULTICHANNEL_SIMPLE_COMMANDS_MAP = MappingProxyType(
+    {
+        "SOURCE_BUTTON": LyngdorfCommand.SOURCE_BUTTON,
+        "AUDIO_MODE_BUTTON": LyngdorfCommand.AUDIO_MODE_BUTTON,
+        "AUDIO_MODE_NEXT": LyngdorfCommand.AUDIO_MODE_NEXT,
+        "AUDIO_MODE_PREV": LyngdorfCommand.AUDIO_MODE_PREV,
+        "LIPSYNC_UP": LyngdorfCommand.LIPSYNC_UP,
+        "LIPSYNC_DOWN": LyngdorfCommand.LIPSYNC_DOWN,
+        "DTS_DIALOG_UP": LyngdorfCommand.DTS_DIALOG_UP,
+        "DTS_DIALOG_DOWN": LyngdorfCommand.DTS_DIALOG_DOWN,
+        "BASS_TRIM_UP": LyngdorfCommand.BASS_TRIM_UP,
+        "BASS_TRIM_DOWN": LyngdorfCommand.BASS_TRIM_DOWN,
+        "TREBLE_TRIM_UP": LyngdorfCommand.TREBLE_TRIM_UP,
+        "TREBLE_TRIM_DOWN": LyngdorfCommand.TREBLE_TRIM_DOWN,
+        "CENTER_TRIM_UP": LyngdorfCommand.CENTER_TRIM_UP,
+        "CENTER_TRIM_DOWN": LyngdorfCommand.CENTER_TRIM_DOWN,
+        "HEIGHTS_TRIM_UP": LyngdorfCommand.HEIGHTS_TRIM_UP,
+        "HEIGHTS_TRIM_DOWN": LyngdorfCommand.HEIGHTS_TRIM_DOWN,
+        "LFE_TRIM_UP": LyngdorfCommand.LFE_TRIM_UP,
+        "LFE_TRIM_DOWN": LyngdorfCommand.LFE_TRIM_DOWN,
+        "SURROUNDS_TRIM_UP": LyngdorfCommand.SURROUNDS_TRIM_UP,
+        "SURROUNDS_TRIM_DOWN": LyngdorfCommand.SURROUNDS_TRIM_DOWN,
+    }
+)
+
+MEDIA_PLAYER_COMMANDS_MAP = MappingProxyType(
+    {
+        media_player.Commands.CURSOR_UP.value: LyngdorfCommand.CURSOR_UP,
+        media_player.Commands.CURSOR_DOWN.value: LyngdorfCommand.CURSOR_DOWN,
+        media_player.Commands.CURSOR_LEFT.value: LyngdorfCommand.CURSOR_LEFT,
+        media_player.Commands.CURSOR_RIGHT.value: LyngdorfCommand.CURSOR_RIGHT,
+        media_player.Commands.CURSOR_ENTER.value: LyngdorfCommand.CURSOR_ENTER,
+        media_player.Commands.DIGIT_0.value: LyngdorfCommand.DIGIT_0,
+        media_player.Commands.DIGIT_1.value: LyngdorfCommand.DIGIT_1,
+        media_player.Commands.DIGIT_2.value: LyngdorfCommand.DIGIT_2,
+        media_player.Commands.DIGIT_3.value: LyngdorfCommand.DIGIT_3,
+        media_player.Commands.DIGIT_4.value: LyngdorfCommand.DIGIT_4,
+        media_player.Commands.DIGIT_5.value: LyngdorfCommand.DIGIT_5,
+        media_player.Commands.DIGIT_6.value: LyngdorfCommand.DIGIT_6,
+        media_player.Commands.DIGIT_7.value: LyngdorfCommand.DIGIT_7,
+        media_player.Commands.DIGIT_8.value: LyngdorfCommand.DIGIT_8,
+        media_player.Commands.DIGIT_9.value: LyngdorfCommand.DIGIT_9,
+        media_player.Commands.MENU.value: LyngdorfCommand.MENU,
+        media_player.Commands.INFO.value: LyngdorfCommand.INFO,
+        media_player.Commands.SETTINGS.value: LyngdorfCommand.SETTINGS,
+        media_player.Commands.BACK.value: LyngdorfCommand.BACK,
+    }
+)
