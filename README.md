@@ -8,7 +8,7 @@
 
 This software may contain bugs that could affect system stability. Please use it at your own risk!
 
-This integration driver allows control of a Lyngdorf devices, it uses the 
+This integration driver allows control of a Lyngdorf processor/amplifier, it uses the 
 [uc-integration-api](https://github.com/aitatoi/integration-python-library) and [UCAPI Framework](https://github.com/JackJPowell/ucapi-framework) libraries to communicate with the Remote Two/3.
 
 Entities:
