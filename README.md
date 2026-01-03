@@ -21,7 +21,7 @@ Supported devices:
 
 Media Player attributes:
 
-| | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
+| Attribute | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
 |-|-|-|
 | State (on, off) | ✅ | ✅ |
 | Source List | ✅ | ✅ |
@@ -29,7 +29,7 @@ Media Player attributes:
 
 Media Player commands:
 
-| | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
+| Commands | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
 |-|-|-|
 | Turn on & off | ✅ | ✅ |
 | Volume up / down | ✅ | ✅ |
@@ -63,61 +63,61 @@ Sensors:
 
 Remote Commands:
 
-| Command | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
-|-|-|-|
-| volume_up | ✅ | ✅ |
-| volume_down | ✅ | ✅ |
-| mute_toggle | ✅ | ✅ |
-| mute | ✅ | ✅ |
-| unmute | ✅ | ✅ |
-| play_pause | ✅ | ✅ |
-| next | ✅ | ✅ |
-| previous | ✅ | ✅ |
-| SOURCE_BUTTON | ✅ | ❌ |
-| SOURCE_NEXT | ✅ | ✅ |
-| SOURCE_PREV | ✅ | ✅ |
-| VOICING_NEXT | ✅ | ✅ |
-| VOICING_PREV | ✅ | ✅ |
-| FOCUS_POSITION_NEXT | ✅ | ✅ |
-| FOCUS_POSITION_PREV | ✅ | ✅ |
-| cursor_up | ✅ | ❌ |
-| cursor_down | ✅ | ❌ |
-| cursor_left | ✅ | ❌ |
-| cursor_right | ✅ | ❌ |
-| cursor_enter | ✅ | ❌ |
-| digit_0 | ✅ | ❌ |
-| digit_1 | ✅ | ❌ |
-| digit_2 | ✅ | ❌ |
-| digit_3 | ✅ | ❌ |
-| digit_4 | ✅ | ❌ |
-| digit_5 | ✅ | ❌ |
-| digit_6 | ✅ | ❌ |
-| digit_7 | ✅ | ❌ |
-| digit_8 | ✅ | ❌ |
-| digit_9 | ✅ | ❌ |
-| menu | ✅ | ❌ |
-| info | ✅ | ❌ |
-| settings | ✅ | ❌ |
-| back | ✅ | ❌ |
-| AUDIO_MODE_BUTTON | ✅ | ❌ |
-| AUDIO_MODE_NEXT | ✅ | ❌ |
-| AUDIO_MODE_PREV | ✅ | ❌ |
-| LIPSYNC_UP | ✅ | ❌ |
-| LIPSYNC_DOWN | ✅ | ❌ |
-| DTS_DIALOG_UP | ✅ | ❌ |
-| DTS_DIALOG_DOWN | ✅ | ❌ |
-| BASS_TRIM_UP | ✅ | ❌ |
-| BASS_TRIM_DOWN | ✅ | ❌ |
-| TREBLE_TRIM_UP | ✅ | ❌ |
-| TREBLE_TRIM_DOWN | ✅ | ❌ |
-| CENTER_TRIM_UP | ✅ | ❌ |
-| CENTER_TRIM_DOWN | ✅ | ❌ |
-| HEIGHTS_TRIM_UP | ✅ | ❌ |
-| HEIGHTS_TRIM_DOWN | ✅ | ❌ |
-| LFE_TRIM_UP | ✅ | ❌ |
-| LFE_TRIM_DOWN | ✅ | ❌ |
-| SURROUNDS_TRIM_UP | ✅ | ❌ |
-| SURROUNDS_TRIM_DOWN | ✅ | ❌ |
+| Command | Mapped to button | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
+|-|-|-|-|
+| volume_up | ✅ | ✅ | ✅ |
+| volume_down | ✅ | ✅ | ✅ |
+| mute_toggle | ✅ | ✅ | ✅ |
+| mute | ❌ | ✅ | ✅ |
+| unmute | ❌ | ✅ | ✅ |
+| play_pause | ✅ | ✅ | ✅ |
+| next | ✅ | ✅ | ✅ |
+| previous | ✅ | ✅ | ✅ |
+| SOURCE_BUTTON | ❌ | ✅ | ❌ |
+| SOURCE_NEXT | ❌ | ✅ | ✅ |
+| SOURCE_PREV | ❌ | ✅ | ✅ |
+| VOICING_NEXT | ❌ | ✅ | ✅ |
+| VOICING_PREV | ❌ | ✅ | ✅ |
+| FOCUS_POSITION_NEXT | ❌ | ✅ | ✅ |
+| FOCUS_POSITION_PREV | ❌ | ✅ | ✅ |
+| cursor_up | ✅ | ✅ | ❌ |
+| cursor_down | ✅ | ✅ | ❌ |
+| cursor_left | ✅ | ✅ | ❌ |
+| cursor_right | ✅| ✅ | ❌ |
+| cursor_enter | ✅ | ✅ | ❌ |
+| digit_0 | ❌ | ✅ | ❌ |
+| digit_1 | ❌ | ✅ | ❌ |
+| digit_2 | ❌ | ✅ | ❌ |
+| digit_3 | ❌ | ✅ | ❌ |
+| digit_4 | ❌ | ✅ | ❌ |
+| digit_5 | ❌ | ✅ | ❌ |
+| digit_6 | ❌ | ✅ | ❌ |
+| digit_7 | ❌ | ✅ | ❌ |
+| digit_8 | ❌ | ✅ | ❌ |
+| digit_9 | ❌ | ✅ | ❌ |
+| menu | ✅ | ✅ | ❌ |
+| info | ❌ | ✅ | ❌ |
+| settings | ❌ | ✅ | ❌ |
+| back | ✅ | ✅ | ❌ |
+| AUDIO_MODE_BUTTON | ❌ | ✅ | ❌ |
+| AUDIO_MODE_NEXT | ❌ | ✅ | ❌ |
+| AUDIO_MODE_PREV | ❌ | ✅ | ❌ |
+| LIPSYNC_UP | ❌ | ✅ | ❌ |
+| LIPSYNC_DOWN | ❌ | ✅ | ❌ |
+| DTS_DIALOG_UP | ❌ | ✅ | ❌ |
+| DTS_DIALOG_DOWN | ❌ | ✅ | ❌ |
+| BASS_TRIM_UP | ❌ | ✅ | ❌ |
+| BASS_TRIM_DOWN | ❌ | ✅ | ❌ |
+| TREBLE_TRIM_UP | ❌ | ✅ | ❌ |
+| TREBLE_TRIM_DOWN | ❌ | ✅ | ❌ |
+| CENTER_TRIM_UP | ❌ | ✅ | ❌ |
+| CENTER_TRIM_DOWN | ❌ | ✅ | ❌ |
+| HEIGHTS_TRIM_UP | ❌ | ✅ | ❌ |
+| HEIGHTS_TRIM_DOWN | ❌ | ✅ | ❌ |
+| LFE_TRIM_UP | ❌ | ✅ | ❌ |
+| LFE_TRIM_DOWN | ❌ | ✅ | ❌ |
+| SURROUNDS_TRIM_UP | ❌ | ✅ | ❌ |
+| SURROUNDS_TRIM_DOWN | ❌ | ✅ | ❌ |
 
 ### Network
 
