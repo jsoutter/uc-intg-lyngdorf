@@ -11,7 +11,7 @@ from ucapi import EntityTypes, MediaPlayer, StatusCodes, media_player
 from ucapi.media_player import Attributes, DeviceClasses
 from ucapi_framework import create_entity_id
 
-from const import MEDIA_PLAYER_COMMANDS_MAP, LyngdorfConfig
+from const import MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP, LyngdorfConfig
 from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
@@ -128,7 +128,7 @@ class LyngdorfMediaPlayer(MediaPlayer):
                     mode: str = params.get("mode")  # type: ignore
                     await self._device.receiver.async_set_audio_mode(mode)
                 case _:
-                    if mapped_cmd := MEDIA_PLAYER_COMMANDS_MAP.get(cmd_id):
+                    if mapped_cmd := MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP.get(cmd_id):
                         await self._device.receiver.async_send_command(mapped_cmd)
                     else:
                         return StatusCodes.NOT_IMPLEMENTED
