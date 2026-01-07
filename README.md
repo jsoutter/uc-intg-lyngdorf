@@ -8,8 +8,7 @@
 
 This software may contain bugs that could affect system stability. Please use it at your own risk!
 
-This integration driver allows control of a Lyngdorf processor/amplifier, it uses the 
-[uc-integration-api](https://github.com/aitatoi/integration-python-library) and [UCAPI Framework](https://github.com/JackJPowell/ucapi-framework) libraries to communicate with the Remote Two/3.
+This integration driver allows control of a Lyngdorf processor/amplifier, it uses the [uc-integration-api](https://github.com/aitatoi/integration-python-library) and [UCAPI Framework](https://github.com/JackJPowell/ucapi-framework) libraries to communicate with the Remote Two/3.
 
 Entities:
 - [Media Player](https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_media_player.md)
@@ -25,7 +24,7 @@ Media Player attributes:
 |-|-|-|
 | State (on, off) | ✅ | ✅ |
 | Source List | ✅ | ✅ |
-| Sound Modes | ✅ | ❌ |
+| Sound Modes (Audio Modes) | ✅ | ❌ |
 
 Media Player commands:
 
@@ -121,7 +120,7 @@ Remote Commands:
 
 ### Network
 
-- The Lyngdorf device must be on the same network subnet as the Remote. 
+- The Lyngdorf device must be on the same network subnet as the Remote.
 - When using DHCP a static IP address reservation for the Lyngdorf device(s) is recommended.
 - Bonjour discovery is used to detect Lyngdorf devices on the network.
 

@@ -83,7 +83,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
         return media_player.States.ON if self.receiver.power else media_player.States.OFF
 
     @property
-    def attributes(self) -> dict[str, Any]:
+    def media_player_attributes(self) -> dict[str, Any]:
         """Return the device attributes."""
         updated_data: dict[str, Any] = {
             MediaAttr.STATE: self.state,
@@ -117,16 +117,17 @@ class LyngdorfDevice(PersistentConnectionDevice):
         """Configuration for available sensors."""
         return self._available_sensors
 
-    def sensor_value(self, identifier: str) -> dict[str, Any]:
+    def sensor_attributes(self, identifier: str) -> dict[str, Any]:
         """Get sensor value using identifier."""
         sensor = self._indentifier_sensor.get(identifier)
-        return self._sensor_value(sensor) if sensor else {}
+        return self._sensor_attributes(sensor) if sensor else {}
 
     async def establish_connection(self):
         """Establish connection."""
         await self.receiver.async_connect()
 
-        self._update_attributes()
+        self._update_media_player()
+        self._update_remote()
         self._update_sensors()
         self.receiver.set_notification_callback(self._update_entities)
         return self.receiver
@@ -152,7 +153,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
             LyngdorfQuery.AUDIO_MODE,
             LyngdorfQuery.AUDIO_MODE_LIST,
         }:
-            self._update_attributes()
+            self._update_media_player()
 
         if event == LyngdorfQuery.POWER:
             self._update_remote()
@@ -161,18 +162,18 @@ class LyngdorfDevice(PersistentConnectionDevice):
         if sensor := self._event_sensor.get(event):
             self._update_sensor(sensor)
 
-    def _update_attributes(self) -> None:
+    def _update_media_player(self) -> None:
         """Update media player attributes."""
         self.events.emit(
-            DeviceEvents.UPDATE,  # type: ignore
+            DeviceEvents.UPDATE,
             create_entity_id(EntityTypes.MEDIA_PLAYER, self.identifier),
-            self.attributes,
+            self.media_player_attributes,
         )
 
     def _update_remote(self) -> None:
         """Update media player attributes."""
         self.events.emit(
-            DeviceEvents.UPDATE,  # type: ignore
+            DeviceEvents.UPDATE,
             create_entity_id(EntityTypes.REMOTE, self.identifier),
             {SensorAttr.STATE: self.state},
         )
@@ -185,12 +186,12 @@ class LyngdorfDevice(PersistentConnectionDevice):
     def _update_sensor(self, sensor: LyngdorfSensorConfig) -> None:
         """Update sensor value."""
         self.events.emit(
-            DeviceEvents.UPDATE,  # type: ignore
+            DeviceEvents.UPDATE,
             create_entity_id(EntityTypes.SENSOR, self.identifier, sensor.identifier),
-            self._sensor_value(sensor),
+            self._sensor_attributes(sensor),
         )
 
-    def _sensor_value(self, sensor: LyngdorfSensorConfig) -> dict[str, Any]:
+    def _sensor_attributes(self, sensor: LyngdorfSensorConfig) -> dict[str, Any]:
         """Return value for sensor"""
         value = sensor.value_fn(self.receiver)
         update: dict[str, Any] = {

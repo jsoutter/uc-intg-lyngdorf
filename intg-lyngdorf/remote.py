@@ -13,16 +13,20 @@ from ucapi.remote import Attributes, Commands, Features
 from ucapi.ui import (
     Buttons,
     DeviceButtonMapping,
-    # EntityCommand,
-    # Size,
-    # UiPage,
+    Size,
+    UiPage,
     create_btn_mapping,
-    # create_ui_icon,
-    # create_ui_text,
+    create_ui_text,
 )
 from ucapi_framework import create_entity_id
 
-from const import MEDIA_PLAYER_COMMANDS_MAP, MULTICHANNEL_SIMPLE_COMMANDS_MAP, SIMPLE_COMMANDS_MAP, LyngdorfConfig
+from const import (
+    MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP,
+    MULTICHANNEL_SIMPLE_COMMANDS_MAP,
+    SIMPLE_COMMANDS_MAP,
+    LyngdorfConfig,
+    SimpleCommands,
+)
 from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
@@ -32,7 +36,7 @@ FEATURES: Final[tuple[Features, ...]] = (
     Features.ON_OFF,
 )
 
-COMMANDS: Final[tuple[media_player.Commands, ...]] = (
+BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
     media_player.Commands.VOLUME_UP,
     media_player.Commands.VOLUME_DOWN,
     media_player.Commands.MUTE_TOGGLE,
@@ -52,9 +56,9 @@ class LyngdorfRemote(Remote):
         self._device: LyngdorfDevice = device
         entity_id = create_entity_id(EntityTypes.REMOTE, config_device.identifier)
 
-        base_commands: list[str] = [cmd.value for cmd in COMMANDS] + list(SIMPLE_COMMANDS_MAP.keys())
+        base_commands: list[str] = [cmd.value for cmd in BASE_COMMANDS] + [cmd.value for cmd in SimpleCommands]
         if config_device.multichannel:
-            base_commands += list(MEDIA_PLAYER_COMMANDS_MAP.keys())
+            base_commands += list(MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP.keys())
             base_commands += list(MULTICHANNEL_SIMPLE_COMMANDS_MAP.keys())
         self._simple_commands: list[str] = base_commands
 
@@ -67,7 +71,7 @@ class LyngdorfRemote(Remote):
             attributes={Attributes.STATE: device.state},
             simple_commands=self._simple_commands,
             button_mapping=self.create_button_mappings(config_device),
-            # ui_pages=self.create_ui(),
+            ui_pages=self.create_ui(),
             cmd_handler=self.cmd_handler,
         )
 
@@ -171,7 +175,7 @@ class LyngdorfRemote(Remote):
             case _:
                 if (
                     mapped_cmd := SIMPLE_COMMANDS_MAP.get(command)
-                    or MEDIA_PLAYER_COMMANDS_MAP.get(command)
+                    or MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP.get(command)
                     or MULTICHANNEL_SIMPLE_COMMANDS_MAP.get(command)
                 ):
                     await self._device.receiver.async_send_command(mapped_cmd)
@@ -208,32 +212,14 @@ class LyngdorfRemote(Remote):
             _LOG.debug(item)
         return button_mappings
 
-    # def create_ui(self) -> list[UiPage | dict[str, Any]]:
-    #     """Create a user interface with different pages that includes all commands"""
-    #     ui_page1 = UiPage("page1", "Power & Input", grid=Size(6, 6))
-    #     ui_page1.add(create_ui_text("Power On", 0, 0, Size(6, 1), Commands.ON))
-    #     ui_page1.add(create_ui_text("1", 0, 1, Size(2, 1), cmds.DIGIT_1.name))
-    #     ui_page1.add(create_ui_text("2", 2, 1, Size(2, 1), cmds.DIGIT_2.name))
-    #     ui_page1.add(create_ui_text("3", 4, 1, Size(2, 1), cmds.DIGIT_3.name))
-    #     ui_page1.add(create_ui_text("4", 0, 2, Size(2, 1), cmds.DIGIT_4.name))
-    #     ui_page1.add(create_ui_text("5", 2, 2, Size(2, 1), cmds.DIGIT_5.name))
-    #     ui_page1.add(create_ui_text("6", 4, 2, Size(2, 1), cmds.DIGIT_6.name))
-    #     ui_page1.add(create_ui_text("7", 0, 3, Size(2, 1), cmds.DIGIT_7.name))
-    #     ui_page1.add(create_ui_text("8", 2, 3, Size(2, 1), cmds.DIGIT_8.name))
-    #     ui_page1.add(create_ui_text("9", 4, 3, Size(2, 1), cmds.DIGIT_9.name))
-    #     ui_page1.add(create_ui_text("SRC -", 0, 4, Size(2, 1), cmds.SRC_DOWN.name))
-    #     ui_page1.add(create_ui_text("0", 2, 4, Size(2, 1), cmds.DIGIT_0.name))
-    #     ui_page1.add(create_ui_text("SRC +", 4, 4, Size(2, 1), cmds.SRC_UP.name))
-    #     ui_page1.add(create_ui_text("Standby", 0, 5, Size(6, 1), Commands.OFF))
+    def create_ui(self) -> list[UiPage | dict[str, Any]]:
+        """Create a user interface with common commands."""
+        ui_page1 = UiPage("page1", "Commands", grid=Size(2, 6))
+        ui_page1.add(create_ui_text("Previous Source", 0, 0, Size(1, 1), SimpleCommands.SOURCE_PREV))
+        ui_page1.add(create_ui_text("Next Source", 1, 0, Size(1, 1), SimpleCommands.SOURCE_PREV))
+        ui_page1.add(create_ui_text("Previous Voicing", 0, 1, Size(1, 1), SimpleCommands.VOICING_NEXT))
+        ui_page1.add(create_ui_text("Next Voicing", 1, 1, Size(1, 1), SimpleCommands.VOICING_PREV))
+        ui_page1.add(create_ui_text("Previous Focus Position", 0, 2, Size(1, 1), SimpleCommands.FOCUS_POSITION_NEXT))
+        ui_page1.add(create_ui_text("Next Focus Position", 1, 2, Size(1, 1), SimpleCommands.FOCUS_POSITION_PREV))
 
-    #     ui_page2 = UiPage("page2", "Configuration", grid=Size(6, 6))
-    #     ui_page2.add(create_ui_text("Setup", 0, 0, Size(6, 1), cmds.SETUP.name))
-    #     ui_page2.add(create_ui_icon("uc:up-arrow", 2, 1, Size(2, 1), cmds.UP.name))
-    #     ui_page2.add(create_ui_icon("uc:left-arrow", 0, 2, Size(2, 1), cmds.LEFT.name))
-    #     ui_page2.add(create_ui_icon("uc:circle", 2, 2, Size(2, 1), cmds.ENTER.name))
-    #     ui_page2.add(create_ui_icon("uc:right-arrow", 4, 2, Size(2, 1), cmds.RIGHT.name))
-    #     ui_page2.add(create_ui_icon("uc:down-arrow", 2, 3, Size(2, 1), cmds.DOWN.name))
-    #     ui_page2.add(create_ui_text("Back", 0, 4, Size(2, 1), cmds.BACK.name))
-    #     ui_page2.add(create_ui_text("Menu", 4, 4, Size(2, 1), cmds.MENU.name))
-
-    #     return [ui_page1, ui_page2]
+        return [ui_page1]

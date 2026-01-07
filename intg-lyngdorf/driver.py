@@ -73,10 +73,10 @@ class LyngdorfIntegrationDriver(BaseIntegrationDriver[LyngdorfDevice, LyngdorfCo
         if isinstance(configured_entity, LyngdorfSensor) and (
             sub_device_id := self.sub_device_from_entity_id(entity_id)
         ):
-            update.update(device.sensor_value(sub_device_id))
+            update.update(device.sensor_attributes(sub_device_id))
 
         elif isinstance(configured_entity, LyngdorfMediaPlayer):
-            update.update(device.attributes)
+            update.update(device.media_player_attributes)
 
         update.update({SensorAttr.STATE: state})
         self.api.configured_entities.update_attributes(entity_id, update)

@@ -6,6 +6,7 @@ This module implements constants for the Lyngdorf integration.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum
 from types import MappingProxyType
 from typing import Any
 
@@ -181,14 +182,25 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
 )
 
 
+class SimpleCommands(str, Enum):
+    """Common simple commands not covered by media-player features."""
+
+    SOURCE_NEXT = "SOURCE_NEXT"
+    SOURCE_PREV = "SOURCE_PREV"
+    VOICING_NEXT = "VOICING_NEXT"
+    VOICING_PREV = "VOICING_PREV"
+    FOCUS_POSITION_NEXT = "FOCUS_POSITION_NEXT"
+    FOCUS_POSITION_PREV = "FOCUS_POSITION_PREV"
+
+
 SIMPLE_COMMANDS_MAP = MappingProxyType(
     {
-        "SOURCE_NEXT": LyngdorfCommand.SOURCE_NEXT,
-        "SOURCE_PREV": LyngdorfCommand.SOURCE_PREV,
-        "VOICING_NEXT": LyngdorfCommand.VOICING_NEXT,
-        "VOICING_PREV": LyngdorfCommand.VOICING_PREV,
-        "FOCUS_POSITION_NEXT": LyngdorfCommand.FOCUS_POSITION_NEXT,
-        "FOCUS_POSITION_PREV": LyngdorfCommand.FOCUS_POSITION_PREV,
+        SimpleCommands.SOURCE_NEXT.value: LyngdorfCommand.SOURCE_NEXT,
+        SimpleCommands.SOURCE_PREV.value: LyngdorfCommand.SOURCE_PREV,
+        SimpleCommands.VOICING_NEXT.value: LyngdorfCommand.VOICING_NEXT,
+        SimpleCommands.VOICING_PREV.value: LyngdorfCommand.VOICING_PREV,
+        SimpleCommands.FOCUS_POSITION_NEXT.value: LyngdorfCommand.FOCUS_POSITION_NEXT,
+        SimpleCommands.FOCUS_POSITION_PREV.value: LyngdorfCommand.FOCUS_POSITION_PREV,
     }
 )
 
@@ -218,7 +230,7 @@ MULTICHANNEL_SIMPLE_COMMANDS_MAP = MappingProxyType(
     }
 )
 
-MEDIA_PLAYER_COMMANDS_MAP = MappingProxyType(
+MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP = MappingProxyType(
     {
         media_player.Commands.CURSOR_UP.value: LyngdorfCommand.CURSOR_UP,
         media_player.Commands.CURSOR_DOWN.value: LyngdorfCommand.CURSOR_DOWN,
