@@ -143,3 +143,9 @@ The major changes found in each new release are listed under the GitHub [release
 
 This project is licensed under the [**Mozilla Public License 2.0**](https://choosealicense.com/licenses/mpl-2.0/).
 See the [LICENSE](LICENSE) file for details.
+
+[commits-shield]: https://img.shields.io/github/commit-activity/y/jsoutter/ha-lyngdorf.svg?style=for-the-badge
+[commits]: https://github.com/jsoutter/ha-lyngdorf/commits/main
+[license-shield]: https://img.shields.io/github/license/jsoutter/ha-lyngdorf.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/release/jsoutter/ha-lyngdorf.svg?style=for-the-badge
+[releases]: https://github.com/jsoutter/ha-lyngdorf/releases
