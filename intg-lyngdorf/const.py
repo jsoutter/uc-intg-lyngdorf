@@ -68,6 +68,7 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
         identifier="stream_type",
         name="Stream type",
         event=LyngdorfQuery.STREAM_TYPE,
+        default_value="n/a",
         value_fn=lambda receiver: receiver.stream_type,
     ),
     LyngdorfSensorConfig(
