@@ -7,36 +7,38 @@ Sensor entity functions for the Lyngdorf integration.
 import logging
 from typing import Any
 
-from ucapi import EntityTypes
-from ucapi.sensor import Attributes, DeviceClasses, Sensor, States
+from ucapi import EntityTypes, Sensor
+from ucapi.sensor import Attributes, DeviceClasses, States
 from ucapi_framework import create_entity_id
+from ucapi_framework.entity import Entity as FrameworkEntity
 
 from const import LyngdorfConfig, LyngdorfSensorConfig
+from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
 
-class LyngdorfSensor(Sensor):
+class LyngdorfSensor(Sensor, FrameworkEntity):
     """Representation of a Lyngdorf Sensor entity."""
 
-    def __init__(self, config_device: LyngdorfConfig, sensor: LyngdorfSensorConfig):
+    def __init__(self, device_config: LyngdorfConfig, device: LyngdorfDevice, sensor_config: LyngdorfSensorConfig):
         """Initialize a Lyngdorf Sensor entity."""
-        self.default_value: str = sensor.default_value
+        self._device = device
+        self._entity_id = create_entity_id(EntityTypes.SENSOR, device_config.identifier, sensor_config.identifier)
 
-        entity_id = create_entity_id(EntityTypes.SENSOR, config_device.identifier, sensor.identifier)
         attributes: dict[str, Any] = {
             Attributes.STATE: States.UNKNOWN,
-            Attributes.VALUE: self.default_value,
-            **({Attributes.UNIT: sensor.unit_of_measurement} if sensor.unit_of_measurement is not None else {}),
+            Attributes.VALUE: sensor_config.default,
+            **({Attributes.UNIT: sensor_config.unit} if sensor_config.unit is not None else {}),
         }
 
-        _LOG.debug("Initializing sensor entity: %s", entity_id)
+        _LOG.debug("Initializing sensor entity: %s", self._entity_id)
 
         super().__init__(
-            identifier=entity_id,
-            name=f"{config_device.name} {sensor.name}",
+            identifier=self._entity_id,
+            name=f"{device_config.name} {sensor_config.name}",
             features=[],
             attributes=attributes,
             device_class=DeviceClasses.CUSTOM,
-            options=sensor.options,
+            options=sensor_config.options,
         )

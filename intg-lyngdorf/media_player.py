@@ -5,11 +5,12 @@ Media-player entity functions for the Lyngdorf integration.
 """
 
 import logging
-from typing import Any, Final, cast
+from typing import Any, Final
 
 from ucapi import EntityTypes, MediaPlayer, StatusCodes, media_player
 from ucapi.media_player import Attributes, DeviceClasses
 from ucapi_framework import create_entity_id
+from ucapi_framework.entity import Entity as FrameworkEntity
 
 from const import MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP, LyngdorfConfig
 from device import LyngdorfDevice
@@ -39,45 +40,47 @@ MULTICHANNEL_FEATURES: Final[tuple[media_player.Features, ...]] = (
 )
 
 
-class LyngdorfMediaPlayer(MediaPlayer):
+class LyngdorfMediaPlayer(MediaPlayer, FrameworkEntity):
     """Representation of a Lyngdorf Media Player entity."""
 
-    def __init__(self, config_device: LyngdorfConfig, device: LyngdorfDevice):
+    def __init__(self, device_config: LyngdorfConfig, device: LyngdorfDevice):
         """Initialize the class."""
         self._device: LyngdorfDevice = device
-        entity_id = create_entity_id(EntityTypes.MEDIA_PLAYER, config_device.identifier)
+        self._entity_id = create_entity_id(EntityTypes.MEDIA_PLAYER, device_config.identifier)
 
-        features = cast(list[media_player.Features], list(FEATURES))
-        if config_device.multichannel:
+        features: list[media_player.Features] = list(FEATURES)
+        if device_config.multichannel:
             features.extend(MULTICHANNEL_FEATURES)
 
-        _LOG.debug("Initializing media player entity: %s", entity_id)
+        attributes: dict[str, Any] = {
+            Attributes.STATE: device.state,
+            Attributes.MUTED: device.receiver.muted,
+            Attributes.VOLUME: device.volume_level,
+            Attributes.SOURCE: device.receiver.source,
+            Attributes.SOURCE_LIST: device.receiver.sources,
+            **(
+                {
+                    Attributes.SOUND_MODE: device.receiver.audio_mode,
+                    Attributes.SOUND_MODE_LIST: device.receiver.audio_modes,
+                }
+                if device_config.multichannel
+                else {}
+            ),
+        }
+
+        _LOG.debug("Initializing media player entity: %s", self._entity_id)
 
         super().__init__(
-            entity_id,
-            config_device.name,
+            self._entity_id,
+            device_config.name,
             features,
-            attributes={
-                Attributes.STATE: device.state,
-                Attributes.MUTED: device.receiver.muted,
-                Attributes.VOLUME: device.volume_level,
-                Attributes.SOURCE: device.receiver.source,
-                Attributes.SOURCE_LIST: device.receiver.sources,
-                **(
-                    {
-                        Attributes.SOUND_MODE: device.receiver.audio_mode,
-                        Attributes.SOUND_MODE_LIST: device.receiver.audio_modes,
-                    }
-                    if config_device.multichannel
-                    else {}
-                ),
-            },
+            attributes,
             device_class=DeviceClasses.RECEIVER,
             cmd_handler=self.cmd_handler,
         )
 
     async def cmd_handler(  # noqa: C901
-        self, entity: MediaPlayer, cmd_id: str, params: dict[str, Any] | None, websocket: Any
+        self, entity: MediaPlayer, cmd_id: str, params: dict[str, Any] | None, _: Any | None = None
     ) -> StatusCodes:
         """
         Media-player entity command handler.
