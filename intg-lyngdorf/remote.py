@@ -31,10 +31,6 @@ from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
-FEATURES: Final[tuple[Features, ...]] = (
-    Features.SEND_CMD,
-    Features.ON_OFF,
-)
 
 BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
     media_player.Commands.VOLUME_UP,
@@ -51,26 +47,26 @@ BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
 class LyngdorfRemote(Remote):
     """Representation of a Lyngdorf Remote entity."""
 
-    def __init__(self, config_device: LyngdorfConfig, device: LyngdorfDevice):
+    def __init__(self, device_config: LyngdorfConfig, device: LyngdorfDevice):
         """Initialize the class."""
         self._device: LyngdorfDevice = device
-        entity_id = create_entity_id(EntityTypes.REMOTE, config_device.identifier)
+        self._entity_id = create_entity_id(EntityTypes.REMOTE, device_config.identifier)
 
         base_commands: list[str] = [cmd.value for cmd in BASE_COMMANDS] + [cmd.value for cmd in SimpleCommands]
-        if config_device.multichannel:
+        if device_config.multichannel:
             base_commands += list(MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP.keys())
             base_commands += list(MULTICHANNEL_SIMPLE_COMMANDS_MAP.keys())
         self._simple_commands: list[str] = base_commands
 
-        _LOG.debug("Initializing remote entity: %s", entity_id)
+        _LOG.debug("Initializing remote entity: %s", self._entity_id)
 
         super().__init__(
-            entity_id,
-            f"{config_device.name} Remote",
-            list(FEATURES),
+            self._entity_id,
+            f"{device_config.name} Remote",
+            features=[Features.SEND_CMD, Features.ON_OFF],
             attributes={Attributes.STATE: device.state},
             simple_commands=self._simple_commands,
-            button_mapping=self.create_button_mappings(config_device),
+            button_mapping=self.create_button_mappings(device_config),
             ui_pages=self.create_ui(),
             cmd_handler=self.cmd_handler,
         )
@@ -88,7 +84,7 @@ class LyngdorfRemote(Remote):
         return default
 
     async def cmd_handler(
-        self, entity: Remote, cmd_id: str, params: dict[str, Any] | None, websocket: Any
+        self, entity: Remote, cmd_id: str, params: dict[str, Any] | None, _: Any | None = None
     ) -> StatusCodes:
         """
         Remote entity command handler.

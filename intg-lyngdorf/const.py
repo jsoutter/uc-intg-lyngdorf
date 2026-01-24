@@ -13,6 +13,7 @@ from typing import Any
 from pylyngdorf.const import LyngdorfCommand, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
 from ucapi import media_player
+from ucapi.sensor import Options
 
 LYNGDORF_SERVICE_TYPE = "_slactrl._tcp.local."
 DEFAULT_DB_VALUE = "--.-"
@@ -41,12 +42,13 @@ class LyngdorfSensorConfig:
 
     identifier: str
     name: str
-    unit_of_measurement: str | None = None
+    unit: str | None = None
     options: dict[str, Any] | None = None
-    default_value: str = ""
+    default: str = ""
     multichannel: bool = False
     event: LyngdorfQuery
     value_fn: Callable[[Lyngdorf], str | int | float | None]
+    entity_id: str = ""
 
 
 SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
@@ -59,8 +61,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="volume",
         name="Volume",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         event=LyngdorfQuery.VOLUME,
         value_fn=lambda receiver: format_db(receiver.volume),
     ),
@@ -68,7 +71,7 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
         identifier="stream_type",
         name="Stream type",
         event=LyngdorfQuery.STREAM_TYPE,
-        default_value="n/a",
+        default="n/a",
         value_fn=lambda receiver: receiver.stream_type,
     ),
     LyngdorfSensorConfig(
@@ -120,8 +123,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="lipsync",
         name="Lipsync",
-        unit_of_measurement="ms",
-        default_value="---",
+        unit="ms",
+        options={Options.CUSTOM_UNIT: "ms", Options.DECIMALS: 0},
+        default="---",
         multichannel=True,
         event=LyngdorfQuery.LIPSYNC,
         value_fn=lambda receiver: str(receiver.lipsync),
@@ -129,8 +133,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="bass_trim",
         name="Bass trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.BASS_TRIM,
         value_fn=lambda receiver: format_db(receiver.bass_trim),
@@ -138,8 +143,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="treble_trim",
         name="Treble trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.TREBLE_TRIM,
         value_fn=lambda receiver: format_db(receiver.treble_trim),
@@ -147,8 +153,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="center_trim",
         name="Center trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.CENTER_TRIM,
         value_fn=lambda receiver: format_db(receiver.center_trim),
@@ -156,8 +163,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="heights_trim",
         name="Heights trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.HEIGHTS_TRIM,
         value_fn=lambda receiver: format_db(receiver.heights_trim),
@@ -165,8 +173,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="lfe_trim",
         name="LFE trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.LFE_TRIM,
         value_fn=lambda receiver: format_db(receiver.lfe_trim),
@@ -174,8 +183,9 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="surrounds_trim",
         name="Surrounds trim",
-        unit_of_measurement="dB",
-        default_value=DEFAULT_DB_VALUE,
+        unit="dB",
+        options={Options.CUSTOM_UNIT: "dB", Options.DECIMALS: 1},
+        default=DEFAULT_DB_VALUE,
         multichannel=True,
         event=LyngdorfQuery.SURROUNDS_TRIM,
         value_fn=lambda receiver: format_db(receiver.surrounds_trim),
