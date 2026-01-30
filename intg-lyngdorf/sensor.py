@@ -29,7 +29,7 @@ class LyngdorfSensor(Sensor, FrameworkEntity):
         attributes: dict[str, Any] = {
             Attributes.STATE: States.UNKNOWN,
             Attributes.VALUE: sensor_config.default,
-            **({Attributes.UNIT: sensor_config.unit} if sensor_config.unit is not None else {}),
+            Attributes.UNIT: sensor_config.unit,
         }
 
         _LOG.debug("Initializing sensor entity: %s", self._entity_id)

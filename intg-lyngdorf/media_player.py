@@ -28,6 +28,13 @@ FEATURES: Final[tuple[media_player.Features, ...]] = (
     media_player.Features.NEXT,
     media_player.Features.PREVIOUS,
     media_player.Features.SELECT_SOURCE,
+    media_player.Features.MEDIA_DURATION,
+    media_player.Features.MEDIA_POSITION,
+    media_player.Features.MEDIA_TITLE,
+    media_player.Features.MEDIA_ARTIST,
+    media_player.Features.MEDIA_ALBUM,
+    media_player.Features.MEDIA_IMAGE_URL,
+    media_player.Features.MEDIA_TYPE,
 )
 
 MULTICHANNEL_FEATURES: Final[tuple[media_player.Features, ...]] = (
@@ -52,29 +59,13 @@ class LyngdorfMediaPlayer(MediaPlayer, FrameworkEntity):
         if device_config.multichannel:
             features.extend(MULTICHANNEL_FEATURES)
 
-        attributes: dict[str, Any] = {
-            Attributes.STATE: device.state,
-            Attributes.MUTED: device.receiver.muted,
-            Attributes.VOLUME: device.volume_level,
-            Attributes.SOURCE: device.receiver.source,
-            Attributes.SOURCE_LIST: device.receiver.sources,
-            **(
-                {
-                    Attributes.SOUND_MODE: device.receiver.audio_mode,
-                    Attributes.SOUND_MODE_LIST: device.receiver.audio_modes,
-                }
-                if device_config.multichannel
-                else {}
-            ),
-        }
-
         _LOG.debug("Initializing media player entity: %s", self._entity_id)
 
         super().__init__(
             self._entity_id,
             device_config.name,
             features,
-            attributes,
+            attributes={Attributes.STATE: device.state},
             device_class=DeviceClasses.RECEIVER,
             cmd_handler=self.cmd_handler,
         )
