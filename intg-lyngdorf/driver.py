@@ -52,7 +52,7 @@ async def main():
         config_class=LyngdorfConfig,
     )
 
-    await driver.register_all_configured_devices()
+    await driver.register_all_device_instances()
 
     discovery = LyngdorfDiscovery(service_type=LYNGDORF_SERVICE_TYPE, timeout=5)
     setup_handler = LyngdorfSetupFlow.create_handler(driver, discovery)  # type: ignore
