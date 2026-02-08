@@ -8,6 +8,7 @@ import asyncio
 import base64
 import io
 import logging
+import ssl
 from asyncio import AbstractEventLoop
 from collections.abc import Coroutine
 from dataclasses import replace
@@ -16,11 +17,12 @@ from types import MappingProxyType
 from typing import Any, TypeAlias
 
 import aiohttp
+import certifi
 from PIL import Image
 from pylyngdorf.const import DeviceModel, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
 from pylyngdorf.music_player import MediaState
-from ucapi import EntityTypes, media_player, remote, sensor
+from ucapi import EntityTypes, media_player, sensor
 from ucapi.media_player import Attributes as MediaAttr
 from ucapi.media_player import MediaType
 from ucapi.remote import Attributes as RemoteAttr
@@ -43,6 +45,8 @@ _MEDIA_PLAYER_STATE_MAP = {
     MediaState.PLAYING: media_player.States.PLAYING,
     MediaState.PAUSED: media_player.States.PAUSED,
 }
+
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 LyngdorfDeviceType: TypeAlias = "LyngdorfDevice"
 
@@ -322,7 +326,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
         try:
             timeout = aiohttp.ClientTimeout(total=10)
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(url) as response:
+                async with session.get(url, ssl=_SSL_CONTEXT) as response:
                     if response.status == 200:
                         image_bytes = await response.read()
                         image = await asyncio.to_thread(lambda: Image.open(io.BytesIO(image_bytes)).convert("RGBA"))
