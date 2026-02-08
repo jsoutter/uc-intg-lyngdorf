@@ -8,6 +8,7 @@ import asyncio
 import base64
 import io
 import logging
+import socket
 import ssl
 from asyncio import AbstractEventLoop
 from collections.abc import Coroutine
@@ -46,7 +47,9 @@ _MEDIA_PLAYER_STATE_MAP = {
     MediaState.PAUSED: media_player.States.PAUSED,
 }
 
-_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+_ssl_context = ssl.create_default_context(cafile=certifi.where())
+_connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
+
 
 LyngdorfDeviceType: TypeAlias = "LyngdorfDevice"
 
@@ -325,8 +328,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
         """Retrieve and store image as base64 data."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(url, ssl=_SSL_CONTEXT) as response:
+            async with aiohttp.ClientSession(connector=_connector, timeout=timeout) as session:
+                async with session.get(url) as response:
                     if response.status == 200:
                         image_bytes = await response.read()
                         image = await asyncio.to_thread(lambda: Image.open(io.BytesIO(image_bytes)).convert("RGBA"))
