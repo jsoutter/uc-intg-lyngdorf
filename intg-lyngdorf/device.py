@@ -102,8 +102,6 @@ class LyngdorfDevice(PersistentConnectionDevice):
         self._current_image_task: asyncio.Task[None] | None = None
         self._current_image_task_url: str | None = None
 
-        self._connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
-
     @property
     def identifier(self) -> str:
         """Return the device identifier."""
@@ -329,7 +327,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
         """Retrieve and store image as base64 data."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            async with aiohttp.ClientSession(connector=self._connector, timeout=timeout) as session:
+            connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
+            async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
                 async with session.get(url) as response:
                     if response.status == 200:
                         image_bytes = await response.read()
