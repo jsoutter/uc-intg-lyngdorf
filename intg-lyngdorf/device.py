@@ -327,8 +327,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
         """Retrieve and store image as base64 data."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            # connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
-            connector = aiohttp.TCPConnector(family=socket.AF_INET)
+            connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
             async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
                 async with session.get(url) as response:
                     if response.status == 200:
