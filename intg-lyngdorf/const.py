@@ -6,7 +6,7 @@ This module implements constants for the Lyngdorf integration.
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from types import MappingProxyType
 from typing import Any
 
@@ -193,7 +193,7 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
 )
 
 
-class SimpleCommands(str, Enum):
+class SimpleCommands(StrEnum):
     """Common simple commands not covered by media-player features."""
 
     SOURCE_NEXT = "SOURCE_NEXT"
