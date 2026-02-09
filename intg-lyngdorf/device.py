@@ -185,10 +185,11 @@ class LyngdorfDevice(PersistentConnectionDevice):
             self._update_state()
 
         match event:
-            case LyngdorfQuery.POWER:
+            case LyngdorfQuery.POWER | LyngdorfQuery.MEDIA_DATA:
                 self._update_media_player()
                 self._update_remote()
-                self._update_sensors()
+                if event == LyngdorfQuery.POWER:
+                    self._update_sensors()
             case (
                 LyngdorfQuery.VOLUME
                 | LyngdorfQuery.MUTE
@@ -196,7 +197,6 @@ class LyngdorfDevice(PersistentConnectionDevice):
                 | LyngdorfQuery.SOURCE_LIST
                 | LyngdorfQuery.AUDIO_MODE
                 | LyngdorfQuery.AUDIO_MODE_LIST
-                | LyngdorfQuery.MEDIA_DATA
             ):
                 self._update_media_player()
             case _:
@@ -327,7 +327,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
         """Retrieve and store image as base64 data."""
         try:
             timeout = aiohttp.ClientTimeout(total=10)
-            connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
+            # connector = aiohttp.TCPConnector(family=socket.AF_INET, ssl=_ssl_context)
+            connector = aiohttp.TCPConnector(family=socket.AF_INET)
             async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
                 async with session.get(url) as response:
                     if response.status == 200:
