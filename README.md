@@ -22,9 +22,14 @@ Media Player attributes:
 
 | Attribute | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
 |-|-|-|
-| State (on, off) | ✅ | ✅ |
+| State (on, off, playing, paused) | ✅ | ✅ |
 | Source List | ✅ | ✅ |
 | Sound Modes (Audio Modes) | ✅ | ❌ |
+| Title | ✅ | ✅ |
+| Album | ✅ | ✅ |
+| Artist | ✅ | ✅ |
+| Artwork | ✅ | ✅ |
+| Media position / duration | ✅ | ✅ |
 
 Media Player commands:
 
