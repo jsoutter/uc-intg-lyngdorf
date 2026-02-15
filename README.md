@@ -13,6 +13,7 @@ This integration driver allows control of a Lyngdorf processor/amplifier, it use
 Entities:
 - [Media Player](https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_media_player.md)
 - [Remote](https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_remote.md)
+- [Select](https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_select.md)
 - [Sensor](https://github.com/unfoldedcircle/core-api/blob/main/doc/entities/entity_sensor.md)
 
 Supported devices:
@@ -25,6 +26,11 @@ Media Player attributes:
 | State (on, off) | ✅ | ✅ |
 | Source List | ✅ | ✅ |
 | Sound Modes (Audio Modes) | ✅ | ❌ |
+| Title | ✅ | ✅ |
+| Album | ✅ | ✅ |
+| Artist | ✅ | ✅ |
+| Artwork | ✅ | ✅ |
+| Media position / duration | ✅ | ✅ |
 
 Media Player commands:
 
@@ -37,28 +43,6 @@ Media Player commands:
 | Directional pad navigation and select | ✅ | ❌ |
 | Numeric digits | ✅ | ❌ |
 | Menu, info, settings and back | ✅ | ❌ |
-
-Sensors:
-
-| Name | Units | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
-|-|-|-|-|
-| Source | | ✅ | ✅ |
-| Volume | dB | ✅ | ✅ |
-| Stream type | | ✅ | ✅ |
-| Voicing | | ✅ | ✅ |
-| Focus position | | ✅ | ✅ |
-| Audio input | | ✅ | ❌ |
-| Audio type | | ✅ | ✅ |
-| Video input | | ✅ | ❌ |
-| Video type | | ✅ | ❌ |
-| Video output | | ✅ | ❌ |
-| Lipsync | ms | ✅ | ❌ |
-| Bass trim | dB | ✅ | ❌ |
-| Treble trim | dB | ✅ | ❌ |
-| Center trim | dB | ✅ | ❌ |
-| Heights trim | dB | ✅ | ❌ |
-| LFE trim | dB | ✅ | ❌ |
-| Surrounds trim | dB | ✅ | ❌ |
 
 Remote Commands:
 
@@ -117,6 +101,38 @@ Remote Commands:
 | LFE_TRIM_DOWN | ❌ | ✅ | ❌ |
 | SURROUNDS_TRIM_UP | ❌ | ✅ | ❌ |
 | SURROUNDS_TRIM_DOWN | ❌ | ✅ | ❌ |
+
+Selects:
+
+| Name | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
+|-|-|-|
+| Source | ✅ | ✅ |
+| Voicing | ✅ | ✅ |
+| Focus position | ✅ | ✅ |
+| Audio mode | ✅ | ❌ |
+
+Sensors:
+
+| Name | Units | MP-40, MP-50, MP-60 | TDAI-1120, TDAI-2210, TDAI-3400 |
+|-|-|-|-|
+| Source | | ✅ | ✅ |
+| Volume | dB | ✅ | ✅ |
+| Stream type | | ✅ | ✅ |
+| Voicing | | ✅ | ✅ |
+| Focus position | | ✅ | ✅ |
+| Audio mode | | ✅ | ❌ |
+| Audio input | | ✅ | ❌ |
+| Audio type | | ✅ | ✅ |
+| Video input | | ✅ | ❌ |
+| Video type | | ✅ | ❌ |
+| Video output | | ✅ | ❌ |
+| Lipsync | ms | ✅ | ❌ |
+| Bass trim | dB | ✅ | ❌ |
+| Treble trim | dB | ✅ | ❌ |
+| Center trim | dB | ✅ | ❌ |
+| Heights trim | dB | ✅ | ❌ |
+| LFE trim | dB | ✅ | ❌ |
+| Surrounds trim | dB | ✅ | ❌ |
 
 ### Network
 

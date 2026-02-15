@@ -4,7 +4,7 @@ This module implements constants for the Lyngdorf integration.
 :license: Mozilla Public License Version 2.0, see LICENSE for more details.
 """
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
@@ -51,6 +51,20 @@ class LyngdorfSensorConfig:
     entity_id: str = ""
 
 
+@dataclass(frozen=True, kw_only=True)
+class LyngdorfSelectConfig:
+    """Class to describe an Lyngdorf select entity."""
+
+    identifier: str
+    name: str
+    multichannel: bool = False
+    events: tuple[LyngdorfQuery, ...]
+    options_fn: Callable[[Lyngdorf], list[str] | None]
+    value_fn: Callable[[Lyngdorf], str | None]
+    set_value_fn: Callable[[Lyngdorf, str], Awaitable[None]]
+    entity_id: str = ""
+
+
 SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
     LyngdorfSensorConfig(
         identifier="source",
@@ -85,6 +99,13 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
         name="Focus position",
         event=LyngdorfQuery.FOCUS_POSITION,
         value_fn=lambda receiver: receiver.focus_position,
+    ),
+    LyngdorfSensorConfig(
+        identifier="audio_mode",
+        name="Audio mode",
+        multichannel=True,
+        event=LyngdorfQuery.AUDIO_MODE,
+        value_fn=lambda receiver: receiver.audio_mode,
     ),
     LyngdorfSensorConfig(
         identifier="audio_input",
@@ -189,6 +210,42 @@ SENSOR_TYPES: tuple[LyngdorfSensorConfig, ...] = (
         multichannel=True,
         event=LyngdorfQuery.SURROUNDS_TRIM,
         value_fn=lambda receiver: format_db(receiver.surrounds_trim),
+    ),
+)
+
+SELECT_TYPES: tuple[LyngdorfSelectConfig, ...] = (
+    LyngdorfSelectConfig(
+        identifier="source",
+        name="Source",
+        events=(LyngdorfQuery.SOURCE_LIST, LyngdorfQuery.SOURCE),
+        options_fn=lambda receiver: receiver.sources,
+        value_fn=lambda receiver: receiver.source,
+        set_value_fn=lambda receiver, value: receiver.async_set_source(value),
+    ),
+    LyngdorfSelectConfig(
+        identifier="voicing",
+        name="Voicing",
+        events=(LyngdorfQuery.VOICING_LIST, LyngdorfQuery.VOICING),
+        options_fn=lambda receiver: receiver.voicings,
+        value_fn=lambda receiver: receiver.voicing,
+        set_value_fn=lambda receiver, value: receiver.async_set_voicing(value),
+    ),
+    LyngdorfSelectConfig(
+        identifier="focus_position",
+        name="Focus position",
+        events=(LyngdorfQuery.FOCUS_POSITION_LIST, LyngdorfQuery.FOCUS_POSITION),
+        options_fn=lambda receiver: receiver.focus_positions,
+        value_fn=lambda receiver: receiver.focus_position,
+        set_value_fn=lambda receiver, value: receiver.async_set_focus_position(value),
+    ),
+    LyngdorfSelectConfig(
+        identifier="audio_mode",
+        name="Audio mode",
+        multichannel=True,
+        events=(LyngdorfQuery.AUDIO_MODE_LIST, LyngdorfQuery.AUDIO_MODE),
+        options_fn=lambda receiver: receiver.audio_modes,
+        value_fn=lambda receiver: receiver.audio_mode,
+        set_value_fn=lambda receiver, value: receiver.async_set_audio_mode(value),
     ),
 )
 
