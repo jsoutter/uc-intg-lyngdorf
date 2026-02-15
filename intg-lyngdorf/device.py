@@ -253,7 +253,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
             MediaAttr.VOLUME: round(receiver.volume_level * 100, 1) if receiver.volume_level else 0.0,
             MediaAttr.SOURCE: receiver.source or "",
             MediaAttr.SOURCE_LIST: receiver.sources,
-            MediaAttr.MEDIA_DURATION: receiver.media_data.duration if receiver.media_data.duration != 0 else None,
+            MediaAttr.MEDIA_DURATION: receiver.media_data.duration,
             MediaAttr.MEDIA_POSITION: receiver.media_data.position,
             MediaAttr.MEDIA_POSITION_UPDATED_AT: now_iso if is_not_stopped else None,
             MediaAttr.MEDIA_TITLE: receiver.media_data.title or "",
