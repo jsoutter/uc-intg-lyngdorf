@@ -16,6 +16,7 @@ from device import LyngdorfDevice
 from discover import LyngdorfDiscovery
 from media_player import LyngdorfMediaPlayer
 from remote import LyngdorfRemote
+from select_entity import LyngdorfSelect
 from sensor import LyngdorfSensor
 from setup import LyngdorfSetupFlow
 
@@ -33,6 +34,7 @@ async def main():
     logging.getLogger("device").setLevel(level)
     logging.getLogger("media_player").setLevel(level)
     logging.getLogger("remote").setLevel(level)
+    logging.getLogger("select_entity").setLevel(level)
     logging.getLogger("sensor").setLevel(level)
     logging.getLogger("pylyngdorf").setLevel(level)
 
@@ -41,6 +43,7 @@ async def main():
         entity_classes=[
             LyngdorfMediaPlayer,
             LyngdorfRemote,
+            lambda cfg, dev: [LyngdorfSelect(cfg, dev, select_config) for select_config in dev.available_selects],
             lambda cfg, dev: [LyngdorfSensor(cfg, dev, sensor_config) for sensor_config in dev.available_sensors],
         ],
     )

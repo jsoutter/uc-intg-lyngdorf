@@ -23,10 +23,10 @@ from PIL import Image
 from pylyngdorf.const import DeviceModel, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
 from pylyngdorf.music_player import MediaState
-from ucapi import EntityTypes, media_player, sensor
+from ucapi import EntityTypes, media_player, select, sensor
 from ucapi.media_player import Attributes as MediaAttr
 from ucapi.media_player import MediaType
-from ucapi.remote import Attributes as RemoteAttr
+from ucapi.select import Attributes as SelectAttr
 from ucapi.sensor import Attributes as SensorAttr
 from ucapi_framework import (
     BaseConfigManager,
@@ -35,9 +35,8 @@ from ucapi_framework import (
     PersistentConnectionDevice,
     create_entity_id,
 )
-from ucapi_framework.device import DeviceEvents
 
-from const import SENSOR_TYPES, LyngdorfConfig, LyngdorfSensorConfig
+from const import SELECT_TYPES, SENSOR_TYPES, LyngdorfConfig, LyngdorfSelectConfig, LyngdorfSensorConfig
 
 _LOG = logging.getLogger(__name__)
 
@@ -84,6 +83,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
 
         self._media_player_entity_id = create_entity_id(EntityTypes.MEDIA_PLAYER, self.identifier)
         self._remote_entity_id = create_entity_id(EntityTypes.REMOTE, self.identifier)
+
         self._available_sensors = tuple(
             replace(sensor, entity_id=create_entity_id(EntityTypes.SENSOR, self.identifier, sensor.identifier))
             for sensor in SENSOR_TYPES
@@ -91,10 +91,18 @@ class LyngdorfDevice(PersistentConnectionDevice):
         )
         self._sensor_events = MappingProxyType({s.event: s for s in self._available_sensors})
 
+        self._available_selects = tuple(
+            replace(select, entity_id=create_entity_id(EntityTypes.SELECT, self.identifier, select.identifier))
+            for select in SELECT_TYPES
+            if not select.multichannel or select.multichannel == device_config.multichannel
+        )
+        self._select_events = MappingProxyType({event: s for s in self._available_selects for event in s.events})
+
         self._state = media_player.States.OFF
         self._is_on: bool = False
         self._media_player_attributes: dict[str, Any] = {MediaAttr.STATE: self.state}
         self._sensor_attributes: dict[str, dict[str, Any]] = {}
+        self._select_attributes: dict[str, dict[str, Any]] = {}
 
         self._image_cache: str | None = None
         self._image_cache_url: str | None = None
@@ -133,14 +141,14 @@ class LyngdorfDevice(PersistentConnectionDevice):
         return self._media_player_attributes
 
     @property
-    def remote_attributes(self) -> dict[str, Any]:
-        """Return the remote attributes."""
-        return {RemoteAttr.STATE: self.state}
-
-    @property
     def available_sensors(self) -> tuple[LyngdorfSensorConfig, ...]:
         """Configuration for available sensors."""
         return self._available_sensors
+
+    @property
+    def available_selects(self) -> tuple[LyngdorfSelectConfig, ...]:
+        """Configuration for available selects."""
+        return self._available_selects
 
     async def establish_connection(self):
         """Establish connection."""
@@ -150,6 +158,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
         self._update_state()
         self._update_media_player()
         self._update_remote()
+        self._update_selects()
         self._update_sensors()
         return self.receiver
 
@@ -170,12 +179,14 @@ class LyngdorfDevice(PersistentConnectionDevice):
     def get_device_attributes(self, entity_id: str) -> dict[str, Any]:
         """Return the attributes for the given entity ID."""
         match entity_id:
-            case self._media_player_entity_id:
+            case self._media_player_entity_id | self._remote_entity_id:
                 return self.media_player_attributes
-            case self._remote_entity_id:
-                return self.remote_attributes
+            case e if (attrs := self._select_attributes.get(e)) is not None:
+                return attrs
+            case e if (attrs := self._sensor_attributes.get(e)) is not None:
+                return attrs
             case _:
-                return self._sensor_attributes.get(entity_id, {})
+                return {}
 
     def _update_entities(self, event: LyngdorfQuery) -> None:
         """Update entities based upon event."""
@@ -187,8 +198,9 @@ class LyngdorfDevice(PersistentConnectionDevice):
         match event:
             case LyngdorfQuery.POWER | LyngdorfQuery.MEDIA_DATA:
                 self._update_media_player()
-                self._update_remote()
                 if event == LyngdorfQuery.POWER:
+                    self._update_remote()
+                    self._update_selects()
                     self._update_sensors()
             case (
                 LyngdorfQuery.VOLUME
@@ -202,6 +214,9 @@ class LyngdorfDevice(PersistentConnectionDevice):
             case _:
                 pass
 
+        if select := self._select_events.get(event):
+            self._update_select(select)
+
         if sensor := self._sensor_events.get(event):
             self._update_sensor(sensor)
 
@@ -213,6 +228,10 @@ class LyngdorfDevice(PersistentConnectionDevice):
             self._state = _MEDIA_PLAYER_STATE_MAP.get(self._receiver.media_data.state, media_player.States.ON)
 
         self._is_on = self._state is not media_player.States.OFF
+
+    def _update_entity(self, entity_id: str, attrs: dict[str, Any]):
+        if self.driver and (entity := self.driver.get_entity_by_id(entity_id, EntitySource.CONFIGURED)):
+            entity.update(attrs)
 
     def _update_media_player(self) -> None:
         """Update media player attributes."""
@@ -236,12 +255,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
         }
 
         if self.device_config.multichannel:
-            updated_data.update(
-                {
-                    MediaAttr.SOUND_MODE: receiver.audio_mode or "",
-                    MediaAttr.SOUND_MODE_LIST: receiver.audio_modes,
-                }
-            )
+            updated_data[MediaAttr.SOUND_MODE] = receiver.audio_mode or ""
+            updated_data[MediaAttr.SOUND_MODE_LIST] = receiver.audio_modes
 
         # Handle image caching
         new_image_url = receiver.media_data.image_url
@@ -255,11 +270,11 @@ class LyngdorfDevice(PersistentConnectionDevice):
             self._image_cache = self._image_cache_url = None
 
         self._media_player_attributes.update(updated_data)
-        self.events.emit(DeviceEvents.UPDATE, self._media_player_entity_id, self._media_player_attributes)
+        self._update_entity(self._media_player_entity_id, self._media_player_attributes)
 
     def _update_remote(self) -> None:
-        """Update media player attributes."""
-        self.events.emit(DeviceEvents.UPDATE, self._remote_entity_id, self.remote_attributes)
+        """Update remote attributes."""
+        self._update_entity(self._remote_entity_id, self._media_player_attributes)
 
     def _update_sensors(self) -> None:
         """Update available sensor values."""
@@ -272,16 +287,26 @@ class LyngdorfDevice(PersistentConnectionDevice):
         sensor_value = (sensor_config.value_fn(self.receiver) if self._is_on else None) or sensor_config.default
 
         attrs = self._sensor_attributes.setdefault(entity_id, {})
-        attrs.update(
-            {
-                SensorAttr.STATE: sensor.States.ON if self._is_on else sensor.States.UNKNOWN,
-                SensorAttr.VALUE: sensor_value,
-                SensorAttr.UNIT: sensor_config.unit,
-            }
-        )
+        attrs[SensorAttr.STATE] = sensor.States.ON if self._is_on else sensor.States.UNAVAILABLE
+        attrs[SensorAttr.VALUE] = sensor_value
+        attrs[SensorAttr.UNIT] = sensor_config.unit
+        self._update_entity(entity_id, attrs)
 
-        if self.driver and self.driver.get_entity_by_id(entity_id, EntitySource.CONFIGURED):
-            self.events.emit(DeviceEvents.UPDATE, entity_id, attrs)
+    def _update_selects(self) -> None:
+        """Update available select values."""
+        for select_config in self._available_selects:
+            self._update_select(select_config)
+
+    def _update_select(self, select_config: LyngdorfSelectConfig) -> None:
+        """Update select value."""
+        entity_id = select_config.entity_id
+        option_value = (select_config.value_fn(self.receiver) if self._is_on else None) or ""
+
+        attrs = self._select_attributes.setdefault(entity_id, {})
+        attrs[SelectAttr.STATE] = select.States.ON if self._is_on else select.States.UNAVAILABLE
+        attrs[SelectAttr.OPTIONS] = select_config.options_fn(self.receiver)
+        attrs[SelectAttr.CURRENT_OPTION] = option_value
+        self._update_entity(entity_id, attrs)
 
     def _create_task(self, coro: Coroutine[None, None, None], delay: float = 0) -> asyncio.Task[None]:
         """Create a background task and track it."""
@@ -319,7 +344,7 @@ class LyngdorfDevice(PersistentConnectionDevice):
             if image_data:
                 updated_data: dict[str, Any] = {MediaAttr.MEDIA_IMAGE_URL: image_data}
                 self._media_player_attributes.update(updated_data)
-                self.events.emit(DeviceEvents.UPDATE, identifier, updated_data)
+                self._update_entity(self._media_player_entity_id, self._media_player_attributes)
         except Exception as ex:
             _LOG.error("Failed to fetch and update image: %s", ex)
 

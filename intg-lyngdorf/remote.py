@@ -9,7 +9,9 @@ import logging
 from typing import Any, Final
 
 from ucapi import EntityTypes, Remote, StatusCodes, media_player
-from ucapi.remote import Attributes, Commands, Features
+from ucapi.media_player import States as MediaStates
+from ucapi.remote import Attributes, Commands, Features, States
+from ucapi.remote import States as RemoteStates
 from ucapi.ui import (
     Buttons,
     DeviceButtonMapping,
@@ -19,6 +21,7 @@ from ucapi.ui import (
     create_ui_text,
 )
 from ucapi_framework import create_entity_id
+from ucapi_framework.entity import Entity as FrameworkEntity
 
 from const import (
     MULTICHANNEL_MEDIA_PLAYER_COMMANDS_MAP,
@@ -31,6 +34,15 @@ from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
+LYNGDORF_REMOTE_STATE_MAPPING: dict[str, str] = {
+    MediaStates.UNKNOWN: RemoteStates.UNKNOWN,
+    MediaStates.UNAVAILABLE: RemoteStates.UNAVAILABLE,
+    MediaStates.OFF: RemoteStates.OFF,
+    MediaStates.ON: RemoteStates.ON,
+    MediaStates.BUFFERING: RemoteStates.ON,
+    MediaStates.PLAYING: RemoteStates.ON,
+    MediaStates.PAUSED: RemoteStates.ON,
+}
 
 BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
     media_player.Commands.VOLUME_UP,
@@ -44,13 +56,17 @@ BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
 )
 
 
-class LyngdorfRemote(Remote):
+class LyngdorfRemote(Remote, FrameworkEntity):
     """Representation of a Lyngdorf Remote entity."""
 
     def __init__(self, device_config: LyngdorfConfig, device: LyngdorfDevice):
         """Initialize the class."""
         self._device: LyngdorfDevice = device
         self._entity_id = create_entity_id(EntityTypes.REMOTE, device_config.identifier)
+
+        attributes: dict[str, Any] = {
+            Attributes.STATE: States.UNAVAILABLE,
+        }
 
         base_commands: list[str] = [cmd.value for cmd in BASE_COMMANDS] + [cmd.value for cmd in SimpleCommands]
         if device_config.multichannel:
@@ -64,12 +80,16 @@ class LyngdorfRemote(Remote):
             self._entity_id,
             f"{device_config.name} Remote",
             features=[Features.SEND_CMD, Features.ON_OFF],
-            attributes={Attributes.STATE: device.state},
+            attributes=attributes,
             simple_commands=self._simple_commands,
             button_mapping=self.create_button_mappings(device_config),
             ui_pages=self.create_ui(),
             cmd_handler=self.cmd_handler,
         )
+
+    def map_entity_states(self, device_state: str) -> str:
+        """Map media player states to remote states."""
+        return LYNGDORF_REMOTE_STATE_MAPPING.get(device_state, RemoteStates.UNKNOWN)
 
     def get_int_param(self, param: str, params: dict[str, Any], default: int):
         """Get parameter in integer format."""
@@ -84,7 +104,11 @@ class LyngdorfRemote(Remote):
         return default
 
     async def cmd_handler(
-        self, entity: Remote, cmd_id: str, params: dict[str, Any] | None, _: Any | None = None
+        self,
+        _entity: Remote,
+        cmd_id: str,
+        params: dict[str, Any] | None = None,
+        _websocket: Any | None = None,
     ) -> StatusCodes:
         """
         Remote entity command handler.

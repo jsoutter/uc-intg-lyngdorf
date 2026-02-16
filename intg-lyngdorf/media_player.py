@@ -59,19 +59,27 @@ class LyngdorfMediaPlayer(MediaPlayer, FrameworkEntity):
         if device_config.multichannel:
             features.extend(MULTICHANNEL_FEATURES)
 
+        attributes: dict[str, Any] = {
+            Attributes.STATE: device.state,
+        }
+
         _LOG.debug("Initializing media player entity: %s", self._entity_id)
 
         super().__init__(
             self._entity_id,
             device_config.name,
             features,
-            attributes={Attributes.STATE: device.state},
+            attributes=attributes,
             device_class=DeviceClasses.RECEIVER,
             cmd_handler=self.cmd_handler,
         )
 
     async def cmd_handler(  # noqa: C901
-        self, entity: MediaPlayer, cmd_id: str, params: dict[str, Any] | None, _: Any | None = None
+        self,
+        _entity: MediaPlayer,
+        cmd_id: str,
+        params: dict[str, Any] | None,
+        _websocket: Any | None = None,
     ) -> StatusCodes:
         """
         Media-player entity command handler.
