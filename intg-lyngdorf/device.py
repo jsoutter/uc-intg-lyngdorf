@@ -23,10 +23,9 @@ from PIL import Image
 from pylyngdorf.const import DeviceModel, LyngdorfQuery
 from pylyngdorf.lyngdorf import Lyngdorf
 from pylyngdorf.music_player import MediaState
-from ucapi import EntityTypes, media_player, remote, select, sensor
+from ucapi import EntityTypes, media_player, select, sensor
 from ucapi.media_player import Attributes as MediaAttr
 from ucapi.media_player import MediaType
-from ucapi.remote import Attributes as RemoteAttr
 from ucapi.select import Attributes as SelectAttr
 from ucapi.sensor import Attributes as SensorAttr
 from ucapi_framework import (
@@ -142,11 +141,6 @@ class LyngdorfDevice(PersistentConnectionDevice):
         return self._media_player_attributes
 
     @property
-    def remote_attributes(self) -> dict[str, Any]:
-        """Return the remote attributes."""
-        return {RemoteAttr.STATE: remote.States.ON if self._is_on else remote.States.OFF}
-
-    @property
     def available_sensors(self) -> tuple[LyngdorfSensorConfig, ...]:
         """Configuration for available sensors."""
         return self._available_sensors
@@ -185,10 +179,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
     def get_device_attributes(self, entity_id: str) -> dict[str, Any]:
         """Return the attributes for the given entity ID."""
         match entity_id:
-            case self._media_player_entity_id:
+            case self._media_player_entity_id | self._remote_entity_id:
                 return self.media_player_attributes
-            case self._remote_entity_id:
-                return self.remote_attributes
             case e if (attrs := self._select_attributes.get(e)) is not None:
                 return attrs
             case e if (attrs := self._sensor_attributes.get(e)) is not None:
@@ -281,8 +273,8 @@ class LyngdorfDevice(PersistentConnectionDevice):
         self._update_entity(self._media_player_entity_id, self._media_player_attributes)
 
     def _update_remote(self) -> None:
-        """Update media player attributes."""
-        self._update_entity(self._remote_entity_id, self.remote_attributes)
+        """Update remote attributes."""
+        self._update_entity(self._remote_entity_id, self._media_player_attributes)
 
     def _update_sensors(self) -> None:
         """Update available sensor values."""

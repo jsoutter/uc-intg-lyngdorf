@@ -9,7 +9,9 @@ import logging
 from typing import Any, Final
 
 from ucapi import EntityTypes, Remote, StatusCodes, media_player
+from ucapi.media_player import States as MediaStates
 from ucapi.remote import Attributes, Commands, Features, States
+from ucapi.remote import States as RemoteStates
 from ucapi.ui import (
     Buttons,
     DeviceButtonMapping,
@@ -32,6 +34,15 @@ from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
+LYNGDORF_REMOTE_STATE_MAPPING: dict[str, str] = {
+    MediaStates.UNKNOWN: RemoteStates.UNKNOWN,
+    MediaStates.UNAVAILABLE: RemoteStates.UNAVAILABLE,
+    MediaStates.OFF: RemoteStates.OFF,
+    MediaStates.ON: RemoteStates.ON,
+    MediaStates.BUFFERING: RemoteStates.ON,
+    MediaStates.PLAYING: RemoteStates.ON,
+    MediaStates.PAUSED: RemoteStates.ON,
+}
 
 BASE_COMMANDS: Final[tuple[media_player.Commands, ...]] = (
     media_player.Commands.VOLUME_UP,
@@ -75,6 +86,10 @@ class LyngdorfRemote(Remote, FrameworkEntity):
             ui_pages=self.create_ui(),
             cmd_handler=self.cmd_handler,
         )
+
+    def map_entity_states(self, device_state: str) -> str:
+        """Map media player states to remote states."""
+        return LYNGDORF_REMOTE_STATE_MAPPING.get(device_state, RemoteStates.UNKNOWN)
 
     def get_int_param(self, param: str, params: dict[str, Any], default: int):
         """Get parameter in integer format."""
