@@ -34,7 +34,7 @@ from device import LyngdorfDevice
 
 _LOG = logging.getLogger(__name__)
 
-LYNGDORF_REMOTE_STATE_MAPPING: dict[str, str] = {
+LYNGDORF_REMOTE_STATE_MAPPING: dict[Any, RemoteStates] = {
     MediaStates.UNKNOWN: RemoteStates.UNKNOWN,
     MediaStates.UNAVAILABLE: RemoteStates.UNAVAILABLE,
     MediaStates.OFF: RemoteStates.OFF,
@@ -87,7 +87,7 @@ class LyngdorfRemote(Remote, FrameworkEntity):
             cmd_handler=self.cmd_handler,
         )
 
-    def map_entity_states(self, device_state: str) -> str:
+    def map_entity_states(self, device_state: Any) -> RemoteStates:
         """Map media player states to remote states."""
         return LYNGDORF_REMOTE_STATE_MAPPING.get(device_state, RemoteStates.UNKNOWN)
 
